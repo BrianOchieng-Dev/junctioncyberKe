@@ -64,12 +64,15 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, { 
+          contentType: file.type,
+          upsert: true 
+        });
 
       if (uploadError) throw uploadError;
 
@@ -77,8 +80,23 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
         .from('avatars')
         .getPublicUrl(filePath);
 
-      setProfile({ ...profile, avatar_url: publicUrl });
-      toast.success('Avatar uploaded! Click Save to confirm.');
+      // Update local state
+      const updatedProfile = { ...profile, avatar_url: publicUrl };
+      setProfile(updatedProfile);
+      
+      // Auto-save to database for better UX
+      const { error: upsertError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        address: profile.address,
+        avatar_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (upsertError) throw upsertError;
+      
+      toast.success('Avatar updated successfully!');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -112,7 +130,10 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
       setSaving(true);
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
-        ...profile,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        address: profile.address,
+        avatar_url: profile.avatar_url,
         updated_at: new Date().toISOString(),
       });
 

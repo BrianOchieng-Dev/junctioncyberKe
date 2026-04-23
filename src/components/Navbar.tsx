@@ -55,7 +55,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               <a
                 key={link.name}
                 href={link.href}
-                className="text-xs font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
+                className="text-sm font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
               >
                 {t(link.name)}
               </a>
@@ -63,7 +63,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               <Link
                 key={link.name}
                 to={link.href}
-                className="text-xs font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
+                className="text-sm font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
               >
                 {t(link.name)}
               </Link>
@@ -136,10 +136,26 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               </button>
             )}
 
-            <button onClick={onBook} className="rounded-full bg-[#1D1D1F] px-8 py-3 text-xs font-bold text-white transition-transform hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
+            <button onClick={onBook} className="rounded-full bg-[#1D1D1F] px-8 py-3 text-sm font-bold text-white transition-transform hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
               {t('book_now')}
             </button>
           </div>
+
+          {/* Admin Terminal for Mobile */}
+          {user && isAdmin && (
+            <Link 
+              to="/admin" 
+              className="md:hidden h-10 w-10 glass-card flex items-center justify-center text-brand-blue shadow-sm active:scale-95 relative"
+              title="Admin Terminal"
+            >
+               <LayoutDashboard size={18} />
+               {unreadCount > 0 && (
+                 <span className="absolute -top-1 -right-1 h-4 w-4 bg-semantic-red text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
+                   {unreadCount > 9 ? '9+' : unreadCount}
+                 </span>
+               )}
+            </Link>
+          )}
 
           {/* Mobile Toggle */}
           <button className="md:hidden p-2 rounded-full hover:bg-black/5 transition-colors" onClick={() => setIsOpen(!isOpen)}>
@@ -176,6 +192,16 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               </Link>
             )
           ))}
+          {user && isAdmin && (
+            <Link 
+              to="/admin" 
+              className="w-full flex items-center justify-center gap-2 rounded-full border-2 border-brand-blue/20 bg-brand-blue/5 py-3 font-semibold text-brand-blue mb-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <LayoutDashboard size={20} />
+              Admin Dashboard
+            </Link>
+          )}
           {!user && (
             <button 
               onClick={() => { setIsOpen(false); onSignIn(); }}

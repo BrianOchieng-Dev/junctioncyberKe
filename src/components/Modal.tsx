@@ -25,7 +25,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="glass-card relative w-full max-w-lg bg-white/90 p-8 shadow-2xl"
+            className="glass-card relative w-full max-w-lg bg-white/90 p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar"
           >
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">{title}</h2>
