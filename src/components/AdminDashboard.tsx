@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -7,18 +7,12 @@ import {
   Layers, 
   MessageSquare, 
   LogOut, 
-  ChevronRight,
   Plus,
   Trash2,
-  Edit2,
-  Image as ImageIcon,
-  Tag,
   Calendar,
   Truck,
   Send,
   User,
-  Save,
-  Bell,
   Home,
   RefreshCw,
   Camera,
@@ -37,7 +31,7 @@ import { supabase } from '../lib/supabase';
 import { useInquiries } from '../context/InquiryContext';
 import { useAuth } from '../context/AuthContext';
 
-type Tab = 'overview' | 'showcase' | 'team' | 'promotions' | 'inbox' | 'scheduler' | 'logistics' | 'settings';
+type Tab = 'overview' | 'showcase' | 'team' | 'promotions' | 'inbox' | 'scheduler' | 'logistics' | 'settings' | 'accounts' | 'events';
 
 interface Inquiry {
   id: string;
@@ -104,6 +98,21 @@ export default function AdminDashboard() {
   const [replyLoading, setReplyLoading] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventForm, setEventForm] = useState({ title: '', date: '', image: '', desc: '' });
+  const [uploadingEvent, setUploadingEvent] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'inbox' && selectedInquiryId) {
+      scrollToBottom();
+    }
+  }, [messages, selectedInquiryId]);
 
   useEffect(() => {
     fetchSettings();
@@ -112,6 +121,8 @@ export default function AdminDashboard() {
     fetchPromotions();
     fetchCarwashItems();
     fetchTeamMembers();
+    fetchAccounts();
+    fetchEvents();
 
     const channel = supabase
       .channel('admin_inquiries')
@@ -369,6 +380,36 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchAccounts = async () => {
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (data) setAccounts(data);
+  };
+
+  const fetchEvents = async () => {
+    const { data } = await supabase.from('business_events').select('*').order('created_at', { ascending: false });
+    if (data) setEvents(data);
+  };
+
+  const handleAddEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadingEvent(true);
+    const { error } = await supabase.from('business_events').insert([eventForm]);
+    if (!error) {
+      toast.success('Poster Deployed!');
+      setEventForm({ title: '', date: '', image: '', desc: '' });
+      fetchEvents();
+    }
+    setUploadingEvent(false);
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    const { error } = await supabase.from('business_events').delete().eq('id', id);
+    if (!error) {
+      toast.success('Poster Redacted');
+      fetchEvents();
+    }
+  };
+
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'showcase', label: 'Gallery', icon: Layers },
@@ -378,6 +419,8 @@ export default function AdminDashboard() {
     { id: 'inbox', label: 'Inbox', icon: MessageSquare },
     { id: 'scheduler', label: 'Bookings', icon: Calendar },
     { id: 'logistics', label: 'Logistics', icon: Truck },
+    { id: 'accounts', label: 'Accounts', icon: User },
+    { id: 'events', label: 'Events', icon: Workflow },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -457,7 +500,7 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2 text-brand-blue font-black text-[9px] tracking-[0.4em] font-heading uppercase opacity-80">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse shadow-[0_0_10px_rgba(0,122,255,0.8)]" /> Terminal Core 3.1
               </div>
-              <h1 className="text-2xl md:text-4xl font-black tracking-tight capitalize font-heading text-[#1D1D1F] drop-shadow-sm">{activeTab}</h1>
+              <h1 className="text-xl md:text-3xl font-black tracking-tight capitalize font-heading text-[#1D1D1F] drop-shadow-sm">{activeTab}</h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden xl:flex items-center gap-4 px-5 py-2 glass-card bg-white/40 border-white/40 shadow-xl">
@@ -509,7 +552,7 @@ export default function AdminDashboard() {
                           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                           <span className="text-[9px] font-black tracking-widest uppercase">System Operational</span>
                         </div>
-                        <h3 className="text-4xl md:text-5xl font-black font-heading italic uppercase leading-none tracking-tighter">Liquid Terminal <br/> Interface</h3>
+                        <h3 className="text-3xl md:text-4xl font-black font-heading italic uppercase leading-none tracking-tighter">Liquid Terminal <br/> Interface</h3>
                       </div>
                       <div className="flex items-end justify-between">
                         <p className="text-white/60 text-xs font-medium max-w-[240px] leading-relaxed">Centralized synchronization of all active Junction service domains.</p>
@@ -564,52 +607,102 @@ export default function AdminDashboard() {
             )}
 
             {activeTab === 'inbox' && (
-              <motion.div initial={{opacity:0, x:20}} animate={{opacity:1, x:0}} exit={{opacity:0}} className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-[calc(100vh-280px)]">
-                <div className={cn("glass-card bg-white/60 p-6 flex flex-col", selectedInquiryId && "hidden lg:flex")}>
-                  <h3 className="text-[10px] font-black tracking-[0.3em] text-black/30 uppercase mb-8 font-heading px-2">Communications</h3>
-                  <div className="space-y-3 overflow-y-auto no-scrollbar">
+              <motion.div initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.02}} className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full min-h-0">
+                <div className={cn("glass-card bg-white/20 backdrop-blur-xl p-6 flex flex-col shadow-xl border-white/30", selectedInquiryId && "hidden lg:flex")}>
+                  <h3 className="text-[8px] font-black tracking-[0.4em] text-black/30 uppercase mb-6 font-heading px-2">Intelligence Feed</h3>
+                  <div className="space-y-3 overflow-y-auto no-scrollbar flex-grow">
                     {inquiries.map(inv => (
-                      <button key={inv.id} onClick={() => { setSelectedInquiryId(inv.id); if (inv.status === 'unread') markAsRead(inv.id); }} className={cn("w-full p-5 rounded-3xl border transition-all text-left flex gap-4", selectedInquiryId === inv.id ? "bg-brand-blue text-white border-brand-blue" : "bg-white/40 border-white/60 hover:bg-white")}>
-                        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", selectedInquiryId === inv.id ? "bg-white/20" : "bg-brand-blue/10 text-brand-blue")}><User size={20} /></div>
-                        <div className="min-w-0 flex-grow">
-                          <p className="font-black text-sm truncate font-heading">{inv.name}</p>
-                          <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">{inv.service || 'General'}</p>
+                      <motion.button 
+                        key={inv.id} 
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setSelectedInquiryId(inv.id); if (inv.status === 'unread') markAsRead(inv.id); }} 
+                        className={cn(
+                          "w-full p-4 rounded-[24px] border transition-all text-left flex gap-4 group relative overflow-hidden", 
+                          selectedInquiryId === inv.id ? "bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20" : "bg-white/40 border-white/60 hover:bg-white/60"
+                        )}
+                      >
+                        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm", selectedInquiryId === inv.id ? "bg-white/20" : "bg-brand-blue/10 text-brand-blue")}>
+                          <User size={18} />
                         </div>
-                      </button>
+                        <div className="min-w-0 flex-grow py-1">
+                          <p className="font-black text-xs truncate font-heading uppercase tracking-tight">{inv.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[8px] font-black opacity-60 uppercase tracking-widest">{inv.service || 'General'}</span>
+                            {inv.status === 'unread' && <span className="h-1.5 w-1.5 rounded-full bg-semantic-red shadow-[0_0_8px_rgba(255,59,48,0.6)]" />}
+                          </div>
+                        </div>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
-                <div className={cn("lg:col-span-3 glass-card bg-white/60 flex flex-col overflow-hidden", !selectedInquiryId && "hidden lg:flex")}>
+                <div className={cn("lg:col-span-3 glass-card bg-white/10 backdrop-blur-2xl flex flex-col overflow-hidden shadow-2xl border-white/20", !selectedInquiryId && "hidden lg:flex")}>
                   {selectedInquiry ? (
                     <>
-                      <div className="p-8 bg-white/40 border-b border-white/60 flex items-center justify-between">
+                      <div className="p-6 bg-white/20 border-b border-white/20 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <button onClick={() => setSelectedInquiryId(null)} className="lg:hidden"><ChevronLeft /></button>
+                          <button onClick={() => setSelectedInquiryId(null)} className="lg:hidden text-brand-blue"><ChevronLeft /></button>
+                          <div className="h-10 w-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue border border-brand-blue/20">
+                            <User size={20} />
+                          </div>
                           <div>
-                            <h4 className="text-xl font-black font-heading uppercase italic">{selectedInquiry.name}</h4>
-                            <p className="text-[10px] font-black text-brand-blue uppercase">{selectedInquiry.email}</p>
+                            <h4 className="text-lg font-black font-heading uppercase italic tracking-tight">{selectedInquiry.name}</h4>
+                            <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest opacity-80">{selectedInquiry.email}</p>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex-grow p-8 space-y-6 overflow-y-auto custom-scrollbar">
-                        <div className="flex gap-4 max-w-[85%]">
-                          <div className="p-6 rounded-[32px] rounded-tl-none bg-white border border-white/60 text-sm font-medium">{selectedInquiry.message}</div>
+                        <div className="flex items-center gap-2">
+                           <div className="px-3 py-1.5 rounded-full bg-white/40 border border-white/60 text-[8px] font-black uppercase tracking-widest text-black/40">Secure Channel</div>
                         </div>
+                      </div>
+                      <div className="flex-grow p-6 space-y-6 overflow-y-auto no-scrollbar bg-gradient-to-b from-transparent to-black/5">
+                        <motion.div initial={{opacity:0, x:-20}} animate={{opacity:1, x:0}} className="flex gap-4 max-w-[85%]">
+                          <div className="p-5 rounded-[28px] rounded-tl-none bg-white/80 backdrop-blur-md border border-white shadow-sm text-xs font-medium leading-relaxed">{selectedInquiry.message}</div>
+                        </motion.div>
                         {messages.map(msg => (
-                          <div key={msg.id} className={cn("flex gap-4 max-w-[85%]", msg.is_admin ? "ml-auto flex-row-reverse" : "")}>
-                            <div className={cn("p-6 rounded-[32px] text-sm font-medium", msg.is_admin ? "bg-brand-blue text-white rounded-tr-none" : "bg-white border border-white/60 rounded-tl-none")}>{msg.message}</div>
-                          </div>
+                          <motion.div 
+                            key={msg.id} 
+                            initial={{opacity:0, x: msg.is_admin ? 20 : -20, scale: 0.95}} 
+                            animate={{opacity:1, x:0, scale: 1}}
+                            className={cn("flex gap-4 max-w-[85%]", msg.is_admin ? "ml-auto flex-row-reverse" : "")}
+                          >
+                            <div className={cn(
+                              "p-5 rounded-[28px] text-xs font-medium leading-relaxed shadow-sm", 
+                              msg.is_admin ? "bg-brand-blue text-white rounded-tr-none shadow-brand-blue/10" : "bg-white/80 backdrop-blur-md border border-white rounded-tl-none"
+                            )}>
+                              {msg.message}
+                            </div>
+                          </motion.div>
                         ))}
+                        <div ref={messagesEndRef} />
                       </div>
-                      <div className="p-8 bg-white/40 border-t border-white/60">
-                        <div className="flex gap-4 bg-white p-2 rounded-full border border-white shadow-xl">
-                          <input value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Draft response..." className="flex-grow bg-transparent outline-none px-6 text-sm font-bold" />
-                          <button onClick={handleReply} disabled={replyLoading || !replyText.trim()} className="h-12 px-10 rounded-full bg-brand-blue text-white font-black text-[10px] uppercase tracking-widest disabled:opacity-50">Send</button>
+                      <div className="p-6 bg-white/30 backdrop-blur-xl border-t border-white/30">
+                        <div className="relative flex items-center gap-4">
+                          <textarea 
+                            value={replyText} 
+                            onChange={e => setReplyText(e.target.value)}
+                            placeholder="Draft response..."
+                            className="w-full px-8 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs resize-none h-14 flex items-center no-scrollbar"
+                            onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); }}}
+                          />
+                          <motion.button 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleReply} 
+                            disabled={replyLoading || !replyText.trim()} 
+                            className="h-14 w-14 rounded-full bg-brand-blue text-white flex items-center justify-center shadow-xl shadow-brand-blue/20 disabled:opacity-50 shrink-0"
+                          >
+                            {replyLoading ? <RefreshCw size={20} className="animate-spin" /> : <Send size={20} />}
+                          </motion.button>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-20 opacity-20"><MessageSquare size={80} className="mb-8" /><p className="font-black font-heading uppercase tracking-widest text-sm">Select a thread to begin</p></div>
+                    <div className="flex-grow flex flex-col items-center justify-center text-center p-12 opacity-30">
+                      <div className="h-24 w-24 rounded-full bg-brand-blue/5 flex items-center justify-center mb-6 border border-brand-blue/10">
+                        <MessageSquare size={40} className="text-brand-blue" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.4em]">Select a communication thread</p>
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -630,7 +723,7 @@ export default function AdminDashboard() {
                       <label className="text-[8px] font-black uppercase tracking-widest text-black/30 ml-4">Intelligence URL</label>
                       <input value={galleryImageUrl} onChange={e => setGalleryImageUrl(e.target.value)} placeholder="https://..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     </div>
-                    <button type="submit" disabled={uploadingGallery} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Asset</button>
+                    <button type="submit" disabled={uploadingGallery} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Asset</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
@@ -752,7 +845,7 @@ export default function AdminDashboard() {
                       <input value={promoForm.img} onChange={e => setPromoForm({...promoForm, img: e.target.value})} placeholder="Asset URL" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <input value={promoForm.deadline} onChange={e => setPromoForm({...promoForm, deadline: e.target.value})} placeholder="Deadline" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     </div>
-                    <button type="submit" disabled={uploadingPromo} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl disabled:opacity-50 font-heading">Synchronize Campaign</button>
+                    <button type="submit" disabled={uploadingPromo} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Campaign</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
@@ -798,7 +891,7 @@ export default function AdminDashboard() {
                         }} />
                       </label>
                     </div>
-                    <button type="submit" disabled={uploadingMember} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl disabled:opacity-50 font-heading">Deploy Personnel</button>
+                    <button type="submit" disabled={uploadingMember} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Personnel</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
@@ -826,7 +919,7 @@ export default function AdminDashboard() {
             {activeTab === 'settings' && (
               <motion.div initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.02}} className="glass-card bg-white/20 backdrop-blur-xl p-12 md:p-16 max-w-4xl mx-auto space-y-12 shadow-2xl border-white/30 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                <h3 className="text-3xl font-black font-heading italic uppercase">Core <span className="text-brand-blue not-italic">Sync</span></h3>
+                <h3 className="text-2xl font-black font-heading italic uppercase">Core <span className="text-brand-blue not-italic">Sync</span></h3>
                 <div className="space-y-8 relative z-10">
                   <div className="space-y-4">
                     <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Hero Interface Asset</label>
@@ -849,7 +942,7 @@ export default function AdminDashboard() {
             {['scheduler', 'logistics'].includes(activeTab) && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-24 text-center flex flex-col items-center justify-center h-full min-h-[400px] shadow-2xl border-white/30">
                 <div className="h-32 w-32 rounded-full bg-brand-blue/5 flex items-center justify-center mb-8 animate-pulse border border-brand-blue/10 shadow-inner"><Layers size={48} className="text-brand-blue/20" /></div>
-                <h3 className="text-3xl font-black font-heading italic uppercase">Sector <span className="text-brand-blue not-italic">Restricted</span></h3>
+                <h3 className="text-2xl font-black font-heading italic uppercase">Sector <span className="text-brand-blue not-italic">Restricted</span></h3>
                 <p className="text-[8px] font-black text-black/30 uppercase tracking-[0.3em] max-w-sm mt-4">Secure environment deployment in progress. <br/> Access level: restricted.</p>
               </motion.div>
             )}
