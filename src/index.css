@@ -6,7 +6,9 @@
   --color-semantic-red: #FF3B30;
   --color-semantic-amber: #FF9F0A;
   --color-semantic-green: #34C759;
-  --font-sans: "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-heading: "SF Pro Display", "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "SF Pro Text", "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-body);
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
   --animate-dash: dash 30s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
@@ -31,14 +33,19 @@
 @layer base {
   body {
     @apply bg-[#FBFBFD] text-[#1D1D1F] antialiased selection:bg-brand-blue/10 overflow-x-hidden relative;
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
     line-height: 1.5;
   }
 
   /* Typography Scale according to Liquid Standard */
-  h1 { @apply text-4xl md:text-7xl font-bold tracking-tight; line-height: 1.1; }
-  h2 { @apply text-3xl md:text-5xl font-bold tracking-tight; line-height: 1.2; }
-  h3 { @apply text-xl md:text-2xl font-bold tracking-tight; }
+  h1, h2, h3, h4, h5, h6 { 
+    font-family: var(--font-heading);
+    @apply font-bold tracking-tight; 
+  }
+  
+  h1 { @apply text-4xl md:text-7xl; line-height: 1.1; }
+  h2 { @apply text-3xl md:text-5xl; line-height: 1.2; }
+  h3 { @apply text-xl md:text-2xl; }
   p { @apply text-base md:text-lg; max-width: 65ch; }
 
   body::before {
@@ -121,6 +128,14 @@
   .ease-expo {
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
 }
 
 /* Custom scrollbar */
@@ -150,7 +165,7 @@
   border-radius: 20px !important;
   box-shadow: 0 10px 40px -10px rgba(0, 122, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   color: #1D1D1F !important;
-  font-family: var(--font-sans) !important;
+  font-family: var(--font-body) !important;
   padding: 12px 16px !important;
   overflow: hidden;
 }

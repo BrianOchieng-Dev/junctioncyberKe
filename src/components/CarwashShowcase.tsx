@@ -15,6 +15,28 @@ export default function CarwashShowcase() {
       setLoading(false);
     }
     fetchItems();
+
+    // Realtime subscription for Carwash Showcase
+    const channel = supabase
+      .channel('carwash_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'carwash_showcase' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setItems(prev => [payload.new, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setItems(prev => prev.filter(item => item.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            setItems(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading || items.length === 0) return null;

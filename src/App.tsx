@@ -26,6 +26,7 @@ import ServicesSummary from './components/ServicesSummary';
 import AboutSummary from './components/AboutSummary';
 import InquiryForm from './components/InquiryForm';
 import PromotionsPoster from './components/PromotionsPoster';
+import CarwashShowcase from './components/CarwashShowcase';
 import ProfileSettings from './components/ProfileSettings';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -287,6 +288,7 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
               />
               <PromotionsPoster />
               <ServicesSummary />
+              <CarwashShowcase />
               <AboutSummary />
               <Community isAuthenticated={!!user} onJoin={() => setModalType('auth')} />
               <Testimonials />

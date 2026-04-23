@@ -21,7 +21,9 @@ import {
   Bell,
   Home,
   RefreshCw,
-  Camera
+  Camera,
+  Megaphone,
+  Droplets
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
@@ -66,6 +68,8 @@ export default function AdminDashboard() {
   const [carwashForm, setCarwashForm] = useState({ before: '', after: '', model: '' });
   const [carwashLoading, setCarwashLoading] = useState(false);
   const [uploadingCarwash, setUploadingCarwash] = useState(false);
+  const [uploadingBefore, setUploadingBefore] = useState(false);
+  const [uploadingAfter, setUploadingAfter] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(GALLERY_CATEGORIES[0]);
   const [galleryImageUrl, setGalleryImageUrl] = useState('');
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -102,8 +106,21 @@ export default function AdminDashboard() {
       )
       .subscribe();
 
+    // Subscribe to carwash changes
+    const carwashChannel = supabase
+      .channel('admin_carwash')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'carwash_showcase' },
+        () => {
+          fetchCarwashItems();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(carwashChannel);
     };
   }, []);
 
@@ -333,7 +350,7 @@ export default function AdminDashboard() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-blue to-purple-600 shadow-[0_0_20px_rgba(0,122,255,0.3)] flex items-center justify-center">
               <div className="h-3 w-3 bg-white rounded-sm rotate-45" />
             </div>
-            <span className="font-black tracking-tighter text-xl text-[#1D1D1F]">Junction <span className="text-brand-blue">Admin</span></span>
+            <span className="font-black tracking-tighter text-xl text-[#1D1D1F] font-heading">Junction <span className="text-brand-blue">Admin</span></span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden h-10 w-10 flex items-center justify-center text-black/40">
             <Plus size={24} className="rotate-45" />
@@ -414,7 +431,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black text-black/40 tracking-wider">Session key</p>
+                  <p className="text-xs font-black text-black/40 tracking-[0.2em] mb-8 font-heading">Brand asset control</p>
                   <p className="text-xs font-mono font-bold text-brand-blue opacity-80">JX-880-ALPHA</p>
                 </div>
                 <div className="h-8 w-[1px] bg-black/5" />
@@ -730,7 +747,7 @@ export default function AdminDashboard() {
                         <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No images published yet</div>
                       )}
                       {galleryItems.map(item => (
-                        <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] flex items-center gap-8 group hover:bg-black/10 transition-all">
+                        <div key={item.id} className="bg-black/5 border border-transparent p-4 md:p-6 rounded-[24px] md:rounded-[32px] flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 group hover:bg-black/10 transition-all">
                            <div className="h-28 w-28 rounded-2xl bg-black/10 object-cover overflow-hidden border border-black/10 shrink-0">
                               <img src={item.image_url} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.category} />
                            </div>
@@ -749,8 +766,8 @@ export default function AdminDashboard() {
             )}
 
             {activeTab === 'carwash' && (
-              <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                <div className="bg-white border border-black/5 p-12 rounded-[56px] space-y-12 shadow-sm">
+              <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-10">
+                <div className="bg-white border border-black/5 p-6 md:p-12 rounded-[32px] md:rounded-[56px] space-y-8 md:space-y-12 shadow-sm">
                    <div>
                       <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Carwash <span className="text-brand-blue ml-2">Transformations</span></h3>
                       <p className="text-black/40 font-bold text-[10px] tracking-[0.2em]">Sector: Automotive detailing</p>
@@ -758,6 +775,7 @@ export default function AdminDashboard() {
                    
                    <form onSubmit={async (e) => {
                      e.preventDefault();
+                     if (!carwashForm.before || !carwashForm.after || !carwashForm.model) return toast.error("Complete all fields");
                      setUploadingCarwash(true);
                      const { error } = await supabase.from('carwash_showcase').insert([{
                        before_url: carwashForm.before,
@@ -765,12 +783,11 @@ export default function AdminDashboard() {
                        car_model: carwashForm.model
                      }]);
                      if (!error) {
-                       toast.success('Transformation published!');
+                       toast.success('Transformation published live!');
                        setCarwashForm({ before: '', after: '', model: '' });
-                       fetchCarwashItems();
                      }
                      setUploadingCarwash(false);
-                   }} className="space-y-6">
+                   }} className="space-y-8">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Car model</label>
                         <input 
@@ -782,102 +799,131 @@ export default function AdminDashboard() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Before image url</label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="url" 
-                              value={carwashForm.before}
-                              onChange={(e) => setCarwashForm({...carwashForm, before: e.target.value})}
-                              placeholder="https://..."
-                              className="flex-grow pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-[28px] outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
-                            />
-                            <label className="h-12 w-12 rounded-2xl bg-black/5 border border-black/10 flex items-center justify-center cursor-pointer hover:bg-black/10 transition-all shrink-0">
-                               <Camera size={18} className="text-brand-blue" />
-                               <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                 const file = e.target.files?.[0];
-                                 if (!file) return;
-                                 const fileName = `${Date.now()}-before-${file.name}`;
-                                 const { data, error } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
-                                 if (data) {
-                                   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
-                                   setCarwashForm(prev => ({ ...prev, before: publicUrl }));
-                                 }
-                               }} />
-                            </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="relative aspect-video rounded-[32px] overflow-hidden bg-black/5 border border-black/10 group">
+                             {carwashForm.before ? (
+                               <img src={carwashForm.before} className="h-full w-full object-cover" alt="Before" />
+                             ) : (
+                               <div className="h-full w-full flex flex-col items-center justify-center text-black/20">
+                                  <Camera size={32} strokeWidth={1} />
+                                  <p className="text-[10px] font-black mt-2">BEFORE PHOTO</p>
+                               </div>
+                             )}
+                             {uploadingBefore && (
+                               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                                  <div className="h-8 w-8 border-4 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+                               </div>
+                             )}
+                             <label className="absolute inset-0 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                                <span className="bg-white text-black px-4 py-2 rounded-full text-[10px] font-black">CHANGE IMAGE</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setUploadingBefore(true);
+                                  const fileName = `${Date.now()}-before-${file.name}`;
+                                  const { data } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
+                                  if (data) {
+                                    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
+                                    setCarwashForm(prev => ({ ...prev, before: publicUrl }));
+                                  }
+                                  setUploadingBefore(false);
+                                }} />
+                             </label>
                           </div>
+                          <input 
+                            type="url" 
+                            value={carwashForm.before}
+                            onChange={(e) => setCarwashForm({...carwashForm, before: e.target.value})}
+                            placeholder="Or paste URL..."
+                            className="w-full px-6 py-4 bg-black/5 border border-black/10 rounded-2xl outline-none text-xs font-bold"
+                          />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">After image url</label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="url" 
-                              value={carwashForm.after}
-                              onChange={(e) => setCarwashForm({...carwashForm, after: e.target.value})}
-                              placeholder="https://..."
-                              className="flex-grow pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-[28px] outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
-                            />
-                            <label className="h-12 w-12 rounded-2xl bg-black/5 border border-black/10 flex items-center justify-center cursor-pointer hover:bg-black/10 transition-all shrink-0">
-                               <Camera size={18} className="text-brand-blue" />
-                               <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                 const file = e.target.files?.[0];
-                                 if (!file) return;
-                                 const fileName = `${Date.now()}-after-${file.name}`;
-                                 const { data, error } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
-                                 if (data) {
-                                   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
-                                   setCarwashForm(prev => ({ ...prev, after: publicUrl }));
-                                 }
-                               }} />
-                            </label>
+
+                        <div className="space-y-4">
+                          <div className="relative aspect-video rounded-[32px] overflow-hidden bg-black/5 border border-black/10 group">
+                             {carwashForm.after ? (
+                               <img src={carwashForm.after} className="h-full w-full object-cover" alt="After" />
+                             ) : (
+                               <div className="h-full w-full flex flex-col items-center justify-center text-black/20">
+                                  <Camera size={32} strokeWidth={1} />
+                                  <p className="text-[10px] font-black mt-2">AFTER PHOTO</p>
+                               </div>
+                             )}
+                             {uploadingAfter && (
+                               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                                  <div className="h-8 w-8 border-4 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+                               </div>
+                             )}
+                             <label className="absolute inset-0 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                                <span className="bg-white text-black px-4 py-2 rounded-full text-[10px] font-black">CHANGE IMAGE</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setUploadingAfter(true);
+                                  const fileName = `${Date.now()}-after-${file.name}`;
+                                  const { data } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
+                                  if (data) {
+                                    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
+                                    setCarwashForm(prev => ({ ...prev, after: publicUrl }));
+                                  }
+                                  setUploadingAfter(false);
+                                }} />
+                             </label>
                           </div>
+                          <input 
+                            type="url" 
+                            value={carwashForm.after}
+                            onChange={(e) => setCarwashForm({...carwashForm, after: e.target.value})}
+                            placeholder="Or paste URL..."
+                            className="w-full px-6 py-4 bg-black/5 border border-black/10 rounded-2xl outline-none text-xs font-bold"
+                          />
                         </div>
                       </div>
 
                       <button 
                          type="submit"
-                         disabled={uploadingCarwash} 
+                         disabled={uploadingCarwash || uploadingBefore || uploadingAfter} 
                          className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs tracking-[0.2em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                       >
-                         {uploadingCarwash ? 'Publishing...' : 'Publish Transformation'}
+                         {uploadingCarwash ? 'Syncing with website...' : 'Publish Transformation'}
                       </button>
                    </form>
                 </div>
 
-                <div className="bg-white border border-black/5 p-12 rounded-[56px] relative overflow-hidden shadow-sm">
-                   <div className="flex items-center justify-between mb-12">
+                <div className="bg-white border border-black/5 p-6 md:p-12 rounded-[32px] md:rounded-[56px] relative overflow-hidden shadow-sm">
+                   <div className="flex items-center justify-between mb-8 md:mb-12">
                      <h4 className="text-sm font-black tracking-[0.2em] text-black/40">Recent Magic</h4>
                      {carwashLoading && <div className="h-4 w-4 border-2 border-black/20 border-t-brand-blue rounded-full animate-spin" />}
                    </div>
                    
-                   <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
+                   <div className="space-y-6 max-h-[500px] md:max-h-[600px] overflow-y-auto custom-scrollbar pr-2 md:pr-4">
                       {carwashItems.length === 0 && !carwashLoading && (
-                        <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No transformations yet</div>
+                        <div className="text-center py-10 md:py-20 text-black/30 font-bold tracking-widest text-xs">No transformations yet</div>
                       )}
                       {carwashItems.map(item => (
-                        <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] space-y-6 group hover:bg-black/10 transition-all">
+                        <div key={item.id} className="bg-black/5 border border-transparent p-4 md:p-6 rounded-[24px] md:rounded-[32px] space-y-4 md:space-y-6 group hover:bg-black/10 transition-all">
                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-black text-[#1D1D1F]">{item.car_model}</p>
+                              <p className="text-sm font-black text-[#1D1D1F] truncate pr-4">{item.car_model}</p>
                               <button 
                                 onClick={async () => {
                                   await supabase.from('carwash_showcase').delete().eq('id', item.id);
                                   fetchCarwashItems();
                                   toast.success('Deleted');
                                 }}
-                                className="h-8 w-8 rounded-lg bg-white text-red-500 border border-black/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                className="h-8 w-8 rounded-lg bg-white text-red-500 border border-black/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0"
                               >
                                 <Trash2 size={14} />
                               </button>
                            </div>
-                           <div className="grid grid-cols-2 gap-4">
-                              <div className="relative group/img">
-                                <img src={item.before_url} className="h-32 w-full object-cover rounded-2xl border border-black/5" alt="Before" />
-                                <span className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[8px] font-bold text-white uppercase tracking-widest">Before</span>
+                           <div className="grid grid-cols-2 gap-3 md:gap-4">
+                              <div className="relative group/img aspect-video">
+                                <img src={item.before_url} className="h-full w-full object-cover rounded-xl md:rounded-2xl border border-black/5" alt="Before" />
+                                <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/60 backdrop-blur-md rounded text-[7px] md:text-[8px] font-bold text-white uppercase tracking-widest">Before</span>
                               </div>
-                              <div className="relative group/img">
-                                <img src={item.after_url} className="h-32 w-full object-cover rounded-2xl border border-brand-blue/20" alt="After" />
-                                <span className="absolute bottom-2 left-2 px-2 py-1 bg-brand-blue/80 backdrop-blur-md rounded-md text-[8px] font-bold text-white uppercase tracking-widest">After</span>
+                              <div className="relative group/img aspect-video">
+                                <img src={item.after_url} className="h-full w-full object-cover rounded-xl md:rounded-2xl border border-brand-blue/20" alt="After" />
+                                <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-brand-blue/80 backdrop-blur-md rounded text-[7px] md:text-[8px] font-bold text-white uppercase tracking-widest">After</span>
                               </div>
                            </div>
                         </div>
@@ -983,15 +1029,15 @@ export default function AdminDashboard() {
                         <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No active promotions</div>
                       )}
                       {promotions.map(item => (
-                        <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] flex flex-col xl:flex-row items-center gap-8 group hover:bg-black/10 transition-all">
-                           <div className="h-28 w-28 xl:h-24 xl:w-24 rounded-2xl bg-black/10 object-cover overflow-hidden border border-black/10 shrink-0">
+                        <div key={item.id} className="bg-black/5 border border-transparent p-4 md:p-6 rounded-[24px] md:rounded-[32px] flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 group hover:bg-black/10 transition-all">
+                           <div className="h-28 w-28 rounded-2xl bg-black/10 object-cover overflow-hidden border border-black/10 shrink-0">
                               <img src={item.img} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.title} />
                            </div>
-                           <div className="min-w-0 pr-4 flex-1">
+                           <div className="min-w-0 flex-grow text-center sm:text-left">
                               <p className="text-sm font-black mb-1 truncate text-[#1D1D1F]">{item.title}</p>
-                              <p className="text-xs font-bold text-brand-blue mb-1 truncate">{item.offer}</p>
-                              <p className="text-[10px] font-black tracking-widest text-black/40 mb-4">{item.tag}</p>
-                              <div className="flex gap-4">
+                              <p className="text-[10px] font-black tracking-widest text-brand-blue mb-2">{item.offer}</p>
+                              <p className="text-[10px] font-black tracking-widest text-black/40 mb-4 line-clamp-2">{item.desc}</p>
+                              <div className="flex gap-4 justify-center sm:justify-start">
                                 <button onClick={() => handleDeletePromotion(item.id)} className="h-10 w-10 rounded-xl bg-white text-red-500 border border-black/5 shadow-sm flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                               </div>
                            </div>
