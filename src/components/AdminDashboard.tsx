@@ -55,6 +55,7 @@ export default function AdminDashboard() {
   const { user, profile, signOut } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [heroBg, setHeroBg] = useState('');
+  const [groupPhoto, setGroupPhoto] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
   const { unreadCount, resetCount } = useInquiries();
@@ -219,6 +220,13 @@ export default function AdminDashboard() {
         .single();
       
       if (data) setHeroBg(data.value);
+      
+      const { data: gpData } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'group_photo')
+        .single();
+      if (gpData) setGroupPhoto(gpData.value);
     } catch (err) {
       console.warn('Settings not found, using defaults.');
     }
@@ -229,7 +237,10 @@ export default function AdminDashboard() {
       setSaveLoading(true);
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ key: 'hero_bg', value: heroBg }, { onConflict: 'key' });
+        .upsert([
+          { key: 'hero_bg', value: heroBg },
+          { key: 'group_photo', value: groupPhoto }
+        ], { onConflict: 'key' });
       
       if (error) throw error;
       toast.success('Settings updated successfully!');

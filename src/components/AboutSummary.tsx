@@ -3,8 +3,20 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
 export default function AboutSummary() {
   const { t } = useLanguage();
+  const [groupPhoto, setGroupPhoto] = useState("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200");
+
+  useEffect(() => {
+    const fetchPhoto = async () => {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', 'group_photo').single();
+      if (data) setGroupPhoto(data.value);
+    };
+    fetchPhoto();
+  }, []);
 
   return (
     <section className="py-12 px-4 overflow-hidden">
@@ -12,7 +24,7 @@ export default function AboutSummary() {
         <div className="w-full lg:w-1/2 relative">
           <div className="glass-card p-2 aspect-video overflow-hidden border-white/60">
             <img 
-              src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200" 
+              src={groupPhoto} 
               className="w-full h-full object-cover rounded-[30px]" 
               alt="The Junction Hub"
               referrerPolicy="no-referrer"
