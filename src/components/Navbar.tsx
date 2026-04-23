@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, User, LayoutDashboard, Workflow, Bell } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
@@ -25,6 +25,7 @@ interface NavbarProps {
 
 export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const { unreadCount: adminUnreadCount } = useInquiries();
   const { unreadCount: userUnreadCount } = useNotifications();
@@ -121,14 +122,47 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
                 
                 {/* User Notifications */}
                 {!isAdmin && (
-                  <button className="h-11 w-11 glass-card flex items-center justify-center text-brand-blue hover:bg-brand-blue/5 transition-all shadow-sm active:scale-95 relative">
-                    <Bell size={20} />
-                    {userUnreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                        {userUnreadCount}
-                      </span>
-                    )}
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="h-11 w-11 glass-card flex items-center justify-center text-brand-blue hover:bg-brand-blue/5 transition-all shadow-sm active:scale-95 relative"
+                    >
+                      <Bell size={20} />
+                      {userUnreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse shadow-[0_0_10px_rgba(255,59,48,0.4)]">
+                          {userUnreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <AnimatePresence>
+                      {showNotifications && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute right-0 mt-4 w-80 glass-card bg-white/90 p-4 shadow-2xl z-[100] border border-black/5"
+                        >
+                          <div className="flex items-center justify-between mb-4 px-2">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-black/40">Notifications</h3>
+                            <button className="text-[10px] font-bold text-brand-blue hover:underline">Mark all read</button>
+                          </div>
+                          <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
+                            {userUnreadCount === 0 && (
+                              <div className="text-center py-8 text-black/20 text-[10px] font-bold uppercase tracking-widest">No new alerts</div>
+                            )}
+                            {/* Simple list of notifications would go here - for now showing a placeholder if count > 0 */}
+                            {userUnreadCount > 0 && (
+                              <div className="p-3 bg-brand-blue/5 rounded-2xl border border-brand-blue/10">
+                                <p className="text-xs font-medium text-[#1D1D1F]">Admin replied to your inquiry</p>
+                                <p className="text-[9px] text-black/40 mt-1">Just now</p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
 
                 <button 

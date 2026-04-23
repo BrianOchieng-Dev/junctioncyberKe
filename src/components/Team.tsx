@@ -1,34 +1,39 @@
 import { motion } from 'motion/react';
 import { Linkedin, Twitter, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-const team = [
-  {
-    name: "Alexander J. Vance",
-    role: "Founder & CEO",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
-    desc: "A visionary entrepreneur dedicated to redefining urban service hubs."
-  },
-  {
-    name: "Sarah K. Miller",
-    role: "Head of Cyber Operations",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
-    desc: "Expert in high-performance networking and digital ecosystem security."
-  },
-  {
-    name: "Julian ‘Master’ Rossi",
-    role: "Lead Barber / Art Director",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
-    desc: "Master of the craft with over 15 years in bespoke grooming artistry."
-  },
-  {
-    name: "Nicolette Vargos",
-    role: "Manager, Detail & Care",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-    desc: "Specialist in chemical engineering for premium automotive detailing."
-  }
-];
+interface Member {
+  id: string;
+  name: string;
+  role: string;
+  image: string;
+}
 
 export default function Team() {
+  const [team, setTeam] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTeam();
+    
+    const channel = supabase
+      .channel('public_team')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => {
+        fetchTeam();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchTeam = async () => {
+    const { data } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
+    if (data) setTeam(data);
+    setLoading(false);
+  };
   return (
     <section id="team" className="py-24 px-4">
       <div className="max-w-7xl mx-auto">

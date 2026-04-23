@@ -1,13 +1,14 @@
 import { motion } from 'motion/react';
 import { Send, MessageSquare, Mail, User } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 export default function InquiryForm() {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,6 +17,17 @@ export default function InquiryForm() {
     service: '',
     message: ''
   });
+
+  // Auto-fill user data if logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || '',
+        name: profile?.full_name || user.email?.split('@')[0] || ''
+      }));
+    }
+  }, [user, profile]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

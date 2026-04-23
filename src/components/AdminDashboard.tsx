@@ -52,7 +52,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [heroBg, setHeroBg] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
@@ -74,6 +74,12 @@ export default function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState(GALLERY_CATEGORIES[0]);
   const [galleryImageUrl, setGalleryImageUrl] = useState('');
   const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  // Team State
+  const [team, setTeam] = useState<any[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamForm, setTeamForm] = useState({ name: '', role: '', image: '' });
+  const [uploadingMember, setUploadingMember] = useState(false);
 
   // Promotions State
   const [promotions, setPromotions] = useState<any[]>([]);
@@ -98,6 +104,7 @@ export default function AdminDashboard() {
     fetchGalleryItems();
     fetchPromotions();
     fetchCarwashItems();
+    fetchTeamMembers();
 
     // Subscribe to new inquiries
     const channel = supabase
@@ -123,9 +130,20 @@ export default function AdminDashboard() {
       )
       .subscribe();
 
+    // Subscribe to team changes
+    const teamChannel = supabase
+      .channel('admin_team')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'team_members' },
+        () => fetchTeamMembers()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(carwashChannel);
+      supabase.removeChannel(teamChannel);
     };
   }, []);
 
@@ -339,6 +357,34 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchTeamMembers = async () => {
+    setTeamLoading(true);
+    const { data } = await supabase.from('team_members').select('*').order('created_at', { ascending: false });
+    if (data) setTeam(data);
+    setTeamLoading(false);
+  };
+
+  const handleAddTeamMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamForm.name || !teamForm.role || !teamForm.image) return toast.error("Please complete all fields");
+    setUploadingMember(true);
+    const { error } = await supabase.from('team_members').insert([teamForm]);
+    if (!error) {
+      toast.success('Member added to team!');
+      setTeamForm({ name: '', role: '', image: '' });
+      fetchTeamMembers();
+    }
+    setUploadingMember(false);
+  };
+
+  const handleDeleteTeamMember = async (id: string) => {
+    const { error } = await supabase.from('team_members').delete().eq('id', id);
+    if (!error) {
+      toast.success('Member removed');
+      fetchTeamMembers();
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     toast.success('Logged out successfully');
@@ -357,7 +403,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="bg-[#FBFBFD] min-h-screen flex flex-col md:flex-row text-[#1D1D1F] font-sans selection:bg-brand-blue/30 selection:text-white overflow-hidden relative">
+    <div className="bg-[#FBFBFD] min-h-screen flex flex-col md:flex-row text-[#1D1D1F] font-body selection:bg-brand-blue/30 selection:text-white overflow-hidden relative">
       <ToastContainer theme="light" position="bottom-right" aria-label="Notifications" />
       {/* Immersive Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
@@ -459,22 +505,14 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="hidden xl:flex items-center gap-3 px-6 py-3 bg-white border border-black/5 rounded-2xl shadow-sm">
-                <div className="relative mr-2">
-                  <Bell size={20} className={cn("transition-colors", unreadCount > 0 ? "text-brand-blue" : "text-black/20")} />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-semantic-red text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
-                </div>
+              <div className="hidden xl:flex items-center gap-3 px-4 py-2 bg-white border border-black/5 rounded-2xl shadow-sm">
                 <div className="text-right">
-                  <p className="text-xs font-black text-black/40 tracking-[0.2em] mb-8 font-heading">Brand asset control</p>
-                  <p className="text-xs font-mono font-bold text-brand-blue opacity-80">JX-880-ALPHA</p>
+                  <p className="text-[10px] font-black text-black/40 tracking-[0.2em] uppercase font-heading">System Operator</p>
+                  <p className="text-[10px] font-mono font-bold text-brand-blue opacity-80 uppercase">{user?.email?.split('@')[0]}</p>
                 </div>
                 <div className="h-8 w-[1px] bg-black/5" />
                 <div className="h-10 w-10 rounded-xl overflow-hidden ring-1 ring-black/10">
-                  <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=100" alt="Admin" className="w-full h-full object-cover" />
+                  <img src={profile?.avatar_url || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=100"} alt="Admin" className="w-full h-full object-cover" />
                 </div>
               </div>
               <button 
@@ -508,18 +546,18 @@ export default function AdminDashboard() {
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: i * 0.1 }}
                       className={cn(
-                        "border p-6 md:p-8 rounded-[32px] group hover:scale-[1.02] shadow-sm transition-all duration-500",
+                        "border p-4 md:p-5 rounded-2xl group hover:scale-[1.02] shadow-sm transition-all duration-500",
                         stat.color
                       )}
                     >
-                      <div className="flex justify-between items-start mb-6">
-                        <span className="text-[10px] font-bold tracking-[0.1em] text-black/40">{stat.label}</span>
-                        <div className="h-6 w-6 rounded-full bg-black/5 flex items-center justify-center">
-                          <Plus size={10} className="text-black/40" />
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="text-[9px] font-bold tracking-[0.1em] text-black/40 font-heading">{stat.label}</span>
+                        <div className="h-5 w-5 rounded-full bg-black/5 flex items-center justify-center">
+                          <Plus size={8} className="text-black/40" />
                         </div>
                       </div>
-                      <p className="text-2xl md:text-3xl font-black tracking-tight text-[#1D1D1F]">{stat.val}</p>
-                      <div className="mt-4 text-[10px] font-bold text-brand-blue tracking-widest">{stat.change}</div>
+                      <p className="text-xl md:text-2xl font-black tracking-tight text-[#1D1D1F] font-heading">{stat.val}</p>
+                      <div className="mt-2 text-[9px] font-bold text-brand-blue tracking-widest">{stat.change}</div>
                     </motion.div>
                   ))}
                 </div>
@@ -545,46 +583,46 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-white border border-black/5 p-10 rounded-[48px] shadow-sm flex flex-col items-center justify-center text-center group transition-all hover:bg-black/[0.02]">
-                    <div className="h-24 w-24 rounded-full bg-brand-blue/10 flex items-center justify-center mb-8 border border-brand-blue/20 group-hover:scale-110 transition-transform">
-                      <Users size={40} className="text-brand-blue" />
+                  <div className="bg-white border border-black/5 p-6 rounded-[32px] shadow-sm flex flex-col items-center justify-center text-center group transition-all hover:bg-black/[0.02]">
+                    <div className="h-16 w-16 rounded-full bg-brand-blue/10 flex items-center justify-center mb-6 border border-brand-blue/20 group-hover:scale-110 transition-transform">
+                      <Users size={24} className="text-brand-blue" />
                     </div>
-                    <h4 className="text-2xl font-black mb-4 text-[#1D1D1F]">Team Overview</h4>
-                    <p className="text-sm text-black/40 leading-relaxed font-medium mb-8 tracking-widest">5 Active members <br/>online</p>
-                    <button className="w-full py-4 rounded-2xl bg-black/5 border border-transparent font-bold hover:bg-black/10 transition-all text-[#1D1D1F]">Manage Team</button>
+                    <h4 className="text-xl font-black mb-2 text-[#1D1D1F] font-heading">Team Overview</h4>
+                    <p className="text-xs text-black/40 leading-relaxed font-medium mb-6 tracking-widest font-body">5 Active members <br/>online</p>
+                    <button className="w-full py-3 rounded-xl bg-black/5 border border-transparent font-bold hover:bg-black/10 transition-all text-[#1D1D1F] text-xs font-heading">Manage Team</button>
                   </div>
                 </div>
 
                 {/* Sub-Grid Activity */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                  <div className="bg-white border border-black/5 p-8 rounded-[40px] shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                      <h4 className="text-sm font-black tracking-widest text-black/40">Recent activity</h4>
-                      <MessageSquare size={16} className="text-brand-blue" />
+                  <div className="bg-white border border-black/5 p-6 rounded-[32px] shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-xs font-black tracking-widest text-black/40 font-heading uppercase">Recent activity</h4>
+                      <MessageSquare size={14} className="text-brand-blue" />
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="flex gap-4 group cursor-pointer">
-                          <div className="h-10 w-10 rounded-full bg-black/5 shrink-0 border border-black/5" />
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold group-hover:text-brand-blue transition-colors text-[#1D1D1F]">New Booking Received</p>
-                            <p className="text-[10px] font-medium text-black/40 tracking-widest leading-none">2m ago • Confirmed</p>
+                        <div key={i} className="flex gap-3 group cursor-pointer">
+                          <div className="h-8 w-8 rounded-full bg-black/5 shrink-0 border border-black/5" />
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold group-hover:text-brand-blue transition-colors text-[#1D1D1F] font-heading">New Booking Received</p>
+                            <p className="text-[9px] font-medium text-black/40 tracking-widest leading-none font-body">2m ago • Confirmed</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                   
-                  <div className="lg:col-span-2 bg-white border border-black/5 p-8 rounded-[40px] shadow-sm flex items-center justify-between overflow-hidden relative group">
-                    <div className="space-y-6 flex-grow max-w-lg">
-                      <h4 className="text-sm font-black tracking-widest text-black/40">Logistics update</h4>
-                      <p className="text-2xl font-bold tracking-tight text-[#1D1D1F]">Curtains & Carpets collection finalized for Karen Residence.</p>
-                      <div className="flex gap-4">
-                        <button className="px-6 py-2 rounded-xl bg-brand-blue/10 text-brand-blue font-black text-[10px] tracking-widest border border-brand-blue/20 hover:bg-brand-blue hover:text-white transition-all shadow-sm">Send driver</button>
-                        <button className="px-6 py-2 rounded-xl bg-black/5 text-black/40 font-black text-[10px] tracking-widest border border-transparent hover:bg-black/10 transition-all">Mark done</button>
+                  <div className="lg:col-span-2 bg-white border border-black/5 p-6 rounded-[32px] shadow-sm flex items-center justify-between overflow-hidden relative group">
+                    <div className="space-y-4 flex-grow max-w-md">
+                      <h4 className="text-xs font-black tracking-widest text-black/40 font-heading uppercase">Logistics update</h4>
+                      <p className="text-lg font-bold tracking-tight text-[#1D1D1F] font-heading">Curtains & Carpets collection finalized for Karen Residence.</p>
+                      <div className="flex gap-3">
+                        <button className="px-5 py-2 rounded-xl bg-brand-blue/10 text-brand-blue font-black text-[9px] tracking-widest border border-brand-blue/20 hover:bg-brand-blue hover:text-white transition-all shadow-sm font-heading">Send driver</button>
+                        <button className="px-5 py-2 rounded-xl bg-black/5 text-black/40 font-black text-[9px] tracking-widest border border-transparent hover:bg-black/10 transition-all font-heading">Mark done</button>
                       </div>
                     </div>
-                    <Truck size={120} className="absolute -right-10 opacity-5 -rotate-12 group-hover:-rotate-0 transition-transform duration-1000 text-[#1D1D1F]" />
+                    <Truck size={80} className="absolute -right-6 opacity-5 -rotate-12 group-hover:-rotate-0 transition-transform duration-1000 text-[#1D1D1F]" />
                   </div>
                 </div>
               </motion.div>
@@ -1176,7 +1214,100 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
-            {['promotions', 'team', 'scheduler', 'logistics'].includes(activeTab) && (
+            {activeTab === 'team' && (
+              <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                <div className="bg-white border border-black/5 p-6 md:p-12 rounded-[32px] md:rounded-[56px] space-y-12 shadow-sm">
+                   <div>
+                      <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4 text-[#1D1D1F] font-heading">Manage <span className="text-brand-blue ml-2">Team</span></h3>
+                      <p className="text-black/40 font-bold text-[10px] tracking-[0.2em] font-heading uppercase">Sector: Human Resources</p>
+                   </div>
+                   
+                   <form onSubmit={handleAddTeamMember} className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4 font-heading uppercase">Full Name</label>
+                        <input 
+                          type="text" 
+                          value={teamForm.name}
+                          onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                          placeholder="e.g. John Doe"
+                          className="w-full pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4 font-heading uppercase">Role / Position</label>
+                        <input 
+                          type="text" 
+                          value={teamForm.role}
+                          onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                          placeholder="e.g. Lead Designer"
+                          className="w-full pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4 font-heading uppercase">Profile Image URL</label>
+                        <div className="flex gap-4">
+                          <input 
+                            type="url" 
+                            value={teamForm.image}
+                            onChange={(e) => setTeamForm({...teamForm, image: e.target.value})}
+                            placeholder="https://..."
+                            className="flex-grow pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
+                          />
+                          <label className="h-14 w-14 bg-white border border-black/10 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-black/5 transition-all text-brand-blue shrink-0">
+                            <Camera size={20} />
+                            <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const { data } = await supabase.storage.from('avatars').upload(`team/${Date.now()}-${file.name}`, file);
+                              if (data) {
+                                const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path);
+                                setTeamForm(prev => ({ ...prev, image: publicUrl }));
+                                toast.success('Image uploaded');
+                              }
+                            }} />
+                          </label>
+                        </div>
+                      </div>
+
+                      <button 
+                         type="submit"
+                         disabled={uploadingMember} 
+                         className="flex items-center justify-center gap-3 w-full py-5 rounded-2xl bg-brand-blue text-white font-black text-xs tracking-[0.2em] shadow-lg shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading"
+                      >
+                         {uploadingMember ? 'Synchronizing...' : 'Add Member'}
+                      </button>
+                   </form>
+                </div>
+
+                <div className="bg-white border border-black/5 p-6 md:p-12 rounded-[32px] md:rounded-[56px] relative overflow-hidden shadow-sm">
+                   <div className="flex items-center justify-between mb-12">
+                     <h4 className="text-xs font-black tracking-[0.2em] text-black/40 font-heading uppercase">Active Members</h4>
+                     {teamLoading && <RefreshCw size={16} className="animate-spin text-brand-blue" />}
+                   </div>
+                   
+                   <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
+                      {team.length === 0 && !teamLoading && (
+                        <div className="text-center py-20 text-black/20 font-black tracking-widest text-[10px] uppercase">No members found</div>
+                      )}
+                      {team.map(member => (
+                        <div key={member.id} className="bg-black/5 border border-transparent p-4 rounded-2xl flex items-center gap-6 group hover:bg-black/10 transition-all">
+                           <div className="h-16 w-16 rounded-xl bg-black/10 object-cover overflow-hidden border border-black/10 shrink-0">
+                              <img src={member.image} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" alt={member.name} />
+                           </div>
+                           <div className="flex-grow min-w-0">
+                              <p className="text-sm font-black text-[#1D1D1F] truncate font-heading">{member.name}</p>
+                              <p className="text-[10px] font-black tracking-widest text-brand-blue font-heading uppercase">{member.role}</p>
+                           </div>
+                           <button onClick={() => handleDeleteTeamMember(member.id)} className="h-10 w-10 rounded-xl bg-white text-red-500 border border-black/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {['promotions', 'scheduler', 'logistics'].includes(activeTab) && (
               <motion.div initial={{opacity:0, scale: 0.9}} animate={{opacity:1, scale: 1}} exit={{opacity:0}} className="bg-white border border-black/5 p-24 md:p-32 rounded-[64px] text-center flex flex-col items-center justify-center min-h-[600px] shadow-sm">
                  <div className="h-48 w-48 rounded-full bg-brand-blue/5 flex items-center justify-center mb-16 relative">
                     <Layers size={96} className="text-brand-blue/30" />
