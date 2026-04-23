@@ -31,6 +31,7 @@ import ProfileSettings from './components/ProfileSettings';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthGate from './components/AuthGate';
+import { NotificationProvider } from './context/NotificationContext';
 
 function NotFound() {
   return (
@@ -263,7 +264,9 @@ function AppContent() {
 
   return (
     <InquiryProvider user={user}>
-      <LanguageConsumer user={user} modalType={modalType} setModalType={setModalType} />
+      <NotificationProvider user={user}>
+        <LanguageConsumer user={user} modalType={modalType} setModalType={setModalType} />
+      </NotificationProvider>
     </InquiryProvider>
   );
 }

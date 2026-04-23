@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 
 export default function InquiryForm() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function InquiryForm() {
         .from('inquiries')
         .insert([
           { 
+            user_id: user?.id,
             name: formData.name, 
             email: formData.email, 
             service: formData.service, 
