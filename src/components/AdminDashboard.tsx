@@ -102,6 +102,8 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [eventForm, setEventForm] = useState({ title: '', date: '', image: '', desc: '' });
   const [uploadingEvent, setUploadingEvent] = useState(false);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -123,6 +125,7 @@ export default function AdminDashboard() {
     fetchTeamMembers();
     fetchAccounts();
     fetchEvents();
+    fetchBookings();
 
     const channel = supabase
       .channel('admin_inquiries')
@@ -407,6 +410,21 @@ export default function AdminDashboard() {
     if (!error) {
       toast.success('Poster Redacted');
       fetchEvents();
+    }
+  };
+
+  const fetchBookings = async () => {
+    setBookingsLoading(true);
+    const { data } = await supabase.from('bookings').select('*').order('date', { ascending: true });
+    if (data) setBookings(data);
+    setBookingsLoading(false);
+  };
+
+  const handleUpdateBookingStatus = async (id: string, status: 'approved' | 'rejected') => {
+    const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+    if (!error) {
+      toast.success(status === 'approved' ? 'Slot Approved & Ticket Sent' : 'Slot Rejected');
+      fetchBookings();
     }
   };
 
@@ -710,7 +728,7 @@ export default function AdminDashboard() {
 
             {activeTab === 'showcase' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
-                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-8 shadow-xl border-white/30">
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-8 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
                   <h3 className="text-2xl font-black font-heading italic uppercase">Deploy <span className="text-brand-blue not-italic">Asset</span></h3>
                   <form onSubmit={handleAddGalleryItem} className="space-y-4">
                     <div className="space-y-2">
@@ -833,7 +851,7 @@ export default function AdminDashboard() {
 
             {activeTab === 'promotions' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
-                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30">
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
                   <h3 className="text-2xl font-black font-heading italic uppercase">Launch <span className="text-brand-blue not-italic">Promo</span></h3>
                   <form onSubmit={handleAddPromotion} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -875,7 +893,7 @@ export default function AdminDashboard() {
 
             {activeTab === 'team' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
-                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30">
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
                   <h3 className="text-2xl font-black font-heading italic uppercase">Team <span className="text-brand-blue not-italic">Sync</span></h3>
                   <form onSubmit={handleAddTeamMember} className="space-y-4">
                     <input value={teamForm.name} onChange={e => setTeamForm({...teamForm, name: e.target.value})} placeholder="Identity" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
@@ -916,6 +934,75 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
+            {activeTab === 'accounts' && (
+              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
+                <h3 className="text-2xl font-black font-heading italic uppercase mb-8">Customer <span className="text-brand-blue not-italic">Accounts</span></h3>
+                <div className="flex-grow overflow-y-auto no-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {accounts.map(acc => (
+                      <motion.div 
+                        key={acc.id} 
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        className="p-6 bg-white/40 border border-white rounded-[32px] flex items-center gap-6 group shadow-lg shadow-black/5 hover:bg-white/60 transition-all"
+                      >
+                        <div className="h-16 w-16 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
+                          <img src={acc.avatar_url || "https://i.pravatar.cc/100"} className="w-full h-full object-cover" alt="Profile" />
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous'}</p>
+                          <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest truncate">{acc.email}</p>
+                          <p className="text-[8px] font-bold text-black/30 mt-1 uppercase tracking-tighter italic">ID: {acc.id.slice(0, 8)}...</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'events' && (
+              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Poster <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <form onSubmit={handleAddEvent} className="space-y-4">
+                    <input value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} placeholder="Event Identity" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input type="date" value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <input value={eventForm.image} onChange={e => setEventForm({...eventForm, image: e.target.value})} placeholder="Visual ID URL" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    </div>
+                    <textarea value={eventForm.desc} onChange={e => setEventForm({...eventForm, desc: e.target.value})} placeholder="Event Intelligence..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-[32px] font-bold outline-none min-h-[120px] resize-none text-xs" />
+                    <button type="submit" disabled={uploadingEvent} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Poster</button>
+                  </form>
+                </div>
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Active Posters</h4>
+                  <div className="grid grid-cols-1 gap-6">
+                    {events.map(ev => (
+                      <motion.div 
+                        key={ev.id} 
+                        whileHover={{ scale: 1.02 }}
+                        className="p-5 bg-white/40 border border-white rounded-[32px] flex gap-6 group transition-all shadow-md"
+                      >
+                        <div className="h-32 w-24 shrink-0 rounded-2xl overflow-hidden shadow-xl border border-white/40">
+                          <img src={ev.image} className="h-full w-full object-cover" alt="Event" />
+                        </div>
+                        <div className="flex-grow flex flex-col justify-center">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-black text-sm uppercase tracking-tight font-heading">{ev.title}</p>
+                              <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest mt-1">{new Date(ev.date).toLocaleDateString()}</p>
+                            </div>
+                            <button onClick={() => handleDeleteEvent(ev.id)} className="h-8 w-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white shadow-sm"><Trash2 size={12} /></button>
+                          </div>
+                          <p className="text-[9px] font-bold text-black/40 mt-3 line-clamp-3 leading-relaxed">{ev.desc}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === 'settings' && (
               <motion.div initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.02}} className="glass-card bg-white/20 backdrop-blur-xl p-12 md:p-16 max-w-4xl mx-auto space-y-12 shadow-2xl border-white/30 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
@@ -939,7 +1026,68 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
-            {['scheduler', 'logistics'].includes(activeTab) && (
+            {activeTab === 'scheduler' && (
+              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Booking <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-brand-blue/5 border border-brand-blue/10 rounded-full">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse" />
+                    <span className="text-[8px] font-black text-brand-blue uppercase tracking-widest">Active Sync</span>
+                  </div>
+                </div>
+                <div className="flex-grow overflow-y-auto no-scrollbar">
+                  <div className="grid grid-cols-1 gap-4">
+                    {bookings.map(book => (
+                      <motion.div 
+                        key={book.id} 
+                        whileHover={{ x: 4 }}
+                        className="p-5 bg-white/40 border border-white rounded-[28px] flex items-center justify-between group shadow-sm hover:bg-white/60 transition-all"
+                      >
+                        <div className="flex items-center gap-6">
+                          <div className={cn(
+                            "h-12 w-12 rounded-2xl flex items-center justify-center text-white shadow-lg",
+                            book.status === 'approved' ? "bg-semantic-green" : book.status === 'rejected' ? "bg-semantic-red" : "bg-brand-blue"
+                          )}>
+                            {book.status === 'approved' ? <Workflow size={20} /> : <Calendar size={20} />}
+                          </div>
+                          <div>
+                            <p className="font-black text-xs uppercase tracking-tight font-heading">{book.user_name}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-[8px] font-black text-brand-blue uppercase tracking-widest">{book.service}</span>
+                              <span className="h-1 w-1 rounded-full bg-black/10" />
+                              <span className="text-[8px] font-bold text-black/40 uppercase">{book.date} @ {book.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {book.status === 'pending' ? (
+                            <>
+                              <button onClick={() => handleUpdateBookingStatus(book.id, 'approved')} className="px-6 py-2.5 rounded-full bg-brand-blue text-white font-black text-[8px] uppercase tracking-widest shadow-lg shadow-brand-blue/20 hover:scale-105 active:scale-95 transition-all">Approve Slot</button>
+                              <button onClick={() => handleUpdateBookingStatus(book.id, 'rejected')} className="h-10 w-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-semantic-red hover:bg-semantic-red hover:text-white transition-all"><Trash2 size={14} /></button>
+                            </>
+                          ) : (
+                            <div className={cn(
+                              "px-6 py-2.5 rounded-full font-black text-[8px] uppercase tracking-widest border",
+                              book.status === 'approved' ? "bg-semantic-green/10 text-semantic-green border-semantic-green/20" : "bg-semantic-red/10 text-semantic-red border-semantic-red/20"
+                            )}>
+                              {book.status === 'approved' ? 'Ticket Processed' : 'Slot Redacted'}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                    {bookings.length === 0 && (
+                      <div className="h-64 flex flex-col items-center justify-center opacity-20">
+                        <Calendar size={48} className="mb-4" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em]">No active booking requests</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'logistics' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-24 text-center flex flex-col items-center justify-center h-full min-h-[400px] shadow-2xl border-white/30">
                 <div className="h-32 w-32 rounded-full bg-brand-blue/5 flex items-center justify-center mb-8 animate-pulse border border-brand-blue/10 shadow-inner"><Layers size={48} className="text-brand-blue/20" /></div>
                 <h3 className="text-2xl font-black font-heading italic uppercase">Sector <span className="text-brand-blue not-italic">Restricted</span></h3>
