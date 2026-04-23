@@ -113,7 +113,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
                   >
                      <LayoutDashboard size={20} />
                      {adminUnreadCount > 0 && (
-                       <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
+                       <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow shadow-lg shadow-red-500/40">
                          {adminUnreadCount > 9 ? '9+' : adminUnreadCount}
                        </span>
                      )}
@@ -129,7 +129,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
                     >
                       <Bell size={20} />
                       {userUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse shadow-[0_0_10px_rgba(255,59,48,0.4)]">
+                        <span className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,59,48,0.5)]">
                           {userUnreadCount}
                         </span>
                       )}
@@ -198,11 +198,11 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               title="Admin Terminal"
             >
                <LayoutDashboard size={18} />
-               {adminUnreadCount > 0 && (
-                 <span className="absolute -top-1 -right-1 h-4 w-4 bg-semantic-red text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
-                   {adminUnreadCount > 9 ? '9+' : adminUnreadCount}
-                 </span>
-               )}
+                {adminUnreadCount > 0 && (
+                  <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 h-4 w-4 bg-semantic-red text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow shadow-md shadow-red-500/40">
+                    {adminUnreadCount > 9 ? '9+' : adminUnreadCount}
+                  </span>
+                )}
             </Link>
           )}
 

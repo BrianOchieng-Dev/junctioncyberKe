@@ -1,11 +1,57 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Shield, Zap, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 export default function About() {
   const { t } = useLanguage();
+  const [groupPhoto, setGroupPhoto] = useState("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200");
+  const [slogan, setSlogan] = useState("");
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data: gpData } = await supabase.from('site_settings').select('value').eq('key', 'group_photo').single();
+      if (gpData) setGroupPhoto(gpData.value);
+      
+      const { data: slData } = await supabase.from('site_settings').select('value').eq('key', 'about_slogan').single();
+      if (slData) setSlogan(slData.value);
+    };
+    fetchSettings();
+  }, []);
+
   return (
-    <section id="about" className="py-24 px-4 overflow-hidden">
+    <div id="about" className="bg-white">
+      {/* Brand Hero Section */}
+      <section className="relative w-full h-[60vh] min-h-[400px] overflow-hidden">
+        <motion.img 
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          src={groupPhoto} 
+          className="w-full h-full object-cover" 
+          alt="The Junction Team"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-white" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+           <motion.h1 
+             initial={{ opacity: 0, y: 30 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.5 }}
+             className="text-4xl md:text-7xl font-black text-white tracking-tighter drop-shadow-2xl font-heading"
+           >
+             {slogan || "Technology Meets Artisanal Skill."}
+           </motion.h1>
+           <motion.div 
+             initial={{ scaleX: 0 }}
+             animate={{ scaleX: 1 }}
+             transition={{ delay: 0.8, duration: 0.8 }}
+             className="h-1.5 w-24 bg-brand-blue mt-6 rounded-full"
+           />
+        </div>
+      </section>
+
+      <section className="py-24 px-4 overflow-hidden bg-white">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-20">
         <div className="w-full lg:w-1/2 relative">
           <motion.div
@@ -60,6 +106,7 @@ export default function About() {
           </motion.div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
