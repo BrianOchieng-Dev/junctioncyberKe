@@ -79,12 +79,23 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
     };
 
     try {
-      const { error } = await supabase.from('inquiries').insert([data]);
-      if (error) throw error;
-      
-      if (modalType === 'book' && serviceVal && dateVal) {
+      if (modalType === 'book') {
+        const { error } = await supabase.from('bookings').insert([{
+          user_id: user?.id,
+          user_name: formData.get('name'),
+          user_email: formData.get('email'),
+          service: serviceVal,
+          date: dateVal,
+          time: '10:00 AM', // Default time as form only captures date
+          status: 'pending',
+          details: formData.get('message'),
+          car_plate: formData.get('car_plate')
+        }]);
+        if (error) throw error;
         toast.success(`Successfully booked ${serviceVal} for ${dateVal}!`);
       } else {
+        const { error } = await supabase.from('inquiries').insert([data]);
+        if (error) throw error;
         toast.success('Successfully Submitted!');
       }
       

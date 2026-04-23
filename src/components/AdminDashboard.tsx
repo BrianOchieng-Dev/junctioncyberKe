@@ -421,8 +421,18 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateBookingStatus = async (id: string, status: 'approved' | 'rejected') => {
+    const booking = bookings.find(b => b.id === id);
     const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+    
     if (!error) {
+      if (status === 'approved' && booking?.user_id) {
+        await supabase.from('notifications').insert([{
+          user_id: booking.user_id,
+          message: `Your ${booking.service} ticket is ready! Please download/print it and present it at our counter on your appointment date.`,
+          type: 'booking_approval',
+          is_read: false
+        }]);
+      }
       toast.success(status === 'approved' ? 'Slot Approved & Ticket Sent' : 'Slot Rejected');
       fetchBookings();
     }
