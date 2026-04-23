@@ -45,6 +45,7 @@ interface Inquiry {
   service: string;
   message: string;
   status: 'unread' | 'read';
+  user_id?: string;
 }
 
 export default function AdminDashboard() {
@@ -85,6 +86,10 @@ export default function AdminDashboard() {
     tag: GALLERY_CATEGORIES[0]
   });
   const [uploadingPromo, setUploadingPromo] = useState(false);
+
+  // Inbox States
+  const [replyText, setReplyText] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
 
   useEffect(() => {
     // Fetch initial data
@@ -148,7 +153,40 @@ export default function AdminDashboard() {
     
     if (!error) {
       setInquiries(prev => prev.map(inv => inv.id === id ? { ...inv, status: 'read' } : inv));
-      // Optionally trigger count refresh in context
+    }
+  };
+
+  const handleReply = async () => {
+    if (!selectedInquiry || !replyText.trim()) return;
+    
+    setReplyLoading(true);
+    try {
+      if (selectedInquiry.status === 'unread') {
+        await markAsRead(selectedInquiry.id);
+      }
+
+      if (selectedInquiry.user_id) {
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert([{
+            user_id: selectedInquiry.user_id,
+            message: `Admin replied: "${replyText.substring(0, 60)}..."`,
+            type: 'inquiry_reply',
+            is_read: false,
+            created_at: new Date().toISOString()
+          }]);
+        
+        if (notifError) throw notifError;
+        toast.success('Reply notification sent to user!');
+      } else {
+        toast.info('Reply sent (User not logged in, no app notification sent)');
+      }
+      
+      setReplyText('');
+    } catch (err: any) {
+      toast.error('Failed to send reply: ' + err.message);
+    } finally {
+      setReplyLoading(false);
     }
   };
 
@@ -657,12 +695,27 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="p-6 md:p-8 bg-black/5 border-t border-black/5">
-                        <div className="flex items-center gap-4 bg-white border border-black/10 p-2.5 rounded-[28px] focus-within:ring-4 focus-within:ring-brand-blue/20 transition-all shadow-sm">
-                           <input type="text" placeholder="Draft a reply..." className="flex-grow bg-transparent outline-none px-6 text-sm font-bold text-[#1D1D1F] placeholder:text-black/30" />
-                           <button className="h-12 px-10 rounded-2xl bg-brand-blue text-white font-black text-[10px] tracking-[0.1em] shadow-lg shadow-brand-blue/20 hover:scale-105 transition-all flex items-center gap-2">
-                             Send <Send size={16} />
+                        <form 
+                          onSubmit={(e) => { e.preventDefault(); handleReply(); }}
+                          className="flex items-center gap-4 bg-white border border-black/10 p-2.5 rounded-[28px] focus-within:ring-4 focus-within:ring-brand-blue/20 transition-all shadow-sm"
+                        >
+                           <input 
+                            type="text" 
+                            placeholder="Draft a reply..." 
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            className="flex-grow bg-transparent outline-none px-6 text-sm font-bold text-[#1D1D1F] placeholder:text-black/30" 
+                           />
+                           <button 
+                            type="submit"
+                            disabled={replyLoading || !replyText.trim()}
+                            className="h-12 px-10 rounded-2xl bg-brand-blue text-white font-black text-[10px] tracking-[0.1em] shadow-lg shadow-brand-blue/20 hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50"
+                           >
+                             {replyLoading ? 'Sending...' : (
+                               <>Send <Send size={16} /></>
+                             )}
                            </button>
-                        </div>
+                        </form>
                       </div>
                     </>
                   ) : (

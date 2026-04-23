@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useInquiries } from '../context/InquiryContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 
 const navLinks = [
   { name: 'nav_home', href: '/' },
@@ -25,8 +26,9 @@ interface NavbarProps {
 export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
-  const { unreadCount } = useInquiries();
-  const { user, isAdmin } = useAuth();
+  const { unreadCount: adminUnreadCount } = useInquiries();
+  const { unreadCount: userUnreadCount } = useNotifications();
+  const { user, isAdmin, profile } = useAuth();
 
   return (
     <motion.nav
@@ -109,20 +111,33 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
                     title="Admin Terminal"
                   >
                      <LayoutDashboard size={20} />
-                     {unreadCount > 0 && (
+                     {adminUnreadCount > 0 && (
                        <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
-                         {unreadCount > 9 ? '9+' : unreadCount}
+                         {adminUnreadCount > 9 ? '9+' : adminUnreadCount}
                        </span>
                      )}
                   </Link>
                 )}
+                
+                {/* User Notifications */}
+                {!isAdmin && (
+                  <button className="h-11 w-11 glass-card flex items-center justify-center text-brand-blue hover:bg-brand-blue/5 transition-all shadow-sm active:scale-95 relative">
+                    <Bell size={20} />
+                    {userUnreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-semantic-red text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                        {userUnreadCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+
                 <button 
                   onClick={onOpenProfile}
                   className="flex items-center gap-3 bg-black/5 rounded-full pl-4 pr-1 py-1 border border-black/5 hover:bg-black/10 transition-all h-11"
                 >
-                   <span className="text-[10px] font-black text-black/40 uppercase tracking-widest truncate max-w-[80px]">{user.email.split('@')[0]}</span>
+                   <span className="text-[10px] font-black text-black/40 uppercase tracking-widest truncate max-w-[80px]">{profile?.full_name || user.email?.split('@')[0]}</span>
                    <div className="h-9 w-9 rounded-full bg-brand-blue shadow-lg border-2 border-white overflow-hidden">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} className="w-full h-full object-cover" />
+                      <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} className="w-full h-full object-cover" />
                    </div>
                 </button>
               </div>
@@ -149,9 +164,9 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               title="Admin Terminal"
             >
                <LayoutDashboard size={18} />
-               {unreadCount > 0 && (
+               {adminUnreadCount > 0 && (
                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-semantic-red text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
-                   {unreadCount > 9 ? '9+' : unreadCount}
+                   {adminUnreadCount > 9 ? '9+' : adminUnreadCount}
                  </span>
                )}
             </Link>
