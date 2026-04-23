@@ -80,19 +80,42 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
 
     try {
       if (modalType === 'book') {
+        const dateVal = formData.get('date') as string;
+        const timeVal = formData.get('time') as string;
+        const phoneVal = formData.get('phone') as string;
+        const nameVal = formData.get('name') as string;
+        const emailVal = formData.get('email') as string;
+
+        // Double-booking prevention check
+        const { data: existing, error: checkError } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('date', dateVal)
+          .eq('time', timeVal)
+          .eq('status', 'approved');
+
+        if (existing && existing.length > 0) {
+          toast.error(`Slot at ${timeVal} on ${dateVal} is already synchronized. Please select another coordinate.`);
+          setFormLoading(false);
+          return;
+        }
+
         const { error } = await supabase.from('bookings').insert([{
           user_id: user?.id,
-          user_name: formData.get('name'),
-          user_email: formData.get('email'),
+          user_name: nameVal,
+          user_email: emailVal,
+          user_phone: phoneVal,
           service: serviceVal,
           date: dateVal,
-          time: '10:00 AM', // Default time as form only captures date
+          time: timeVal,
           status: 'pending',
           details: formData.get('message'),
-          car_plate: formData.get('car_plate')
+          car_plate: formData.get('car_plate'),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }]);
         if (error) throw error;
-        toast.success(`Successfully booked ${serviceVal} for ${dateVal}!`);
+        toast.success(`Successfully booked ${serviceVal} for ${dateVal} @ ${timeVal}!`);
       } else {
         const { error } = await supabase.from('inquiries').insert([data]);
         if (error) throw error;
@@ -221,15 +244,30 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
                     className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-black/40 ml-2">Preferred Date</label>
+                    <input 
+                      type="date" 
+                      name="date"
+                      required 
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-black/40 ml-2">Preferred Time</label>
+                    <input 
+                      type="time" 
+                      name="time"
+                      required 
+                      className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-black/40 ml-2">Preferred Date</label>
-                  <input 
-                    type="date" 
-                    name="date"
-                    required 
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
-                  />
+                  <label className="text-xs font-bold text-black/40 ml-2">Phone Number</label>
+                  <input type="tel" name="phone" required placeholder="+254..." className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
                 </div>
               </>
             )}

@@ -183,36 +183,119 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
 
         {activeTab === 'tickets' && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-6 space-y-6">
-            {userBookings.map(book => (
-              <div key={book.id} className="relative group">
-                <div className={cn(
-                  "glass-card p-6 border-dashed border-2 flex flex-col md:flex-row justify-between items-center gap-6 overflow-hidden",
-                  book.status === 'approved' ? "border-brand-blue/30 bg-brand-blue/[0.02]" : "border-black/10 bg-black/[0.02] grayscale"
-                )}>
-                  <div className="flex items-center gap-6">
-                    <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center text-white shadow-xl", book.status === 'approved' ? "bg-brand-blue" : "bg-black/20")}>
-                      <TicketIcon size={32} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-brand-blue uppercase tracking-[0.3em] mb-1">{book.service} Pass</p>
-                      <h4 className="text-lg font-black uppercase tracking-tight">{book.status === 'approved' ? 'Active Ticket' : 'Pending Verification'}</h4>
-                      <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-black/40"><Calendar size={12} /> {book.date}</div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-black/40"><Clock size={12} /> {book.time}</div>
+            {userBookings.map(book => {
+              const expiryDate = new Date(book.date);
+              expiryDate.setDate(expiryDate.getDate() + 3);
+              const isApproved = book.status === 'approved';
+              
+              return (
+                <div key={book.id} className="relative group overflow-hidden">
+                  <div className={cn(
+                    "glass-card p-0 border-2 flex flex-col shadow-2xl transition-all",
+                    isApproved ? "border-brand-blue/30 bg-white" : "border-black/5 bg-black/[0.02] grayscale opacity-60"
+                  )}>
+                    {/* Ticket Header */}
+                    <div className={cn("px-8 py-4 flex justify-between items-center", isApproved ? "bg-brand-blue text-white" : "bg-black/10 text-black/40")}>
+                      <div className="flex items-center gap-3">
+                        <TicketIcon size={18} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Operational Pass</span>
                       </div>
-                      <p className="text-[7px] font-black text-brand-blue uppercase tracking-widest mt-4 animate-pulse">Important: Present this ticket at the counter</p>
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-60">ID: {book.id.substring(0, 8).toUpperCase()}</span>
                     </div>
+
+                    <div className="p-8 space-y-8">
+                      {/* Section 1: Service Schedule */}
+                      <div className="grid grid-cols-2 gap-8">
+                        <div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-black/30 mb-2">Service Slot</p>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-black uppercase tracking-tight">{book.date}</span>
+                            <span className="text-xs font-bold text-brand-blue">{book.time}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-black/30 mb-2">Ticket Expiry</p>
+                          <span className="text-xs font-black text-semantic-red uppercase">{expiryDate.toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Customer Metadata */}
+                      <div className="pt-6 border-t border-black/5">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-black/30 mb-4">Customer Credentials</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-black uppercase">{book.user_name}</p>
+                            <p className="text-[10px] font-medium text-black/40 lowercase">{book.user_email}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-black">{book.user_phone || 'N/A'}</p>
+                            <p className="text-[8px] font-bold text-black/30 uppercase">Authenticated Phone</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Service Specifications */}
+                      <div className="pt-6 border-t border-black/5">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-black/30 mb-2">Service Logic</p>
+                            <h4 className="text-lg font-black text-brand-blue uppercase leading-none">{book.service}</h4>
+                          </div>
+                          {book.car_plate && (
+                            <div className="px-4 py-2 bg-black text-white rounded-lg">
+                              <p className="text-[10px] font-black tracking-widest">{book.car_plate}</p>
+                            </div>
+                          )}
+                        </div>
+                        {book.details && (
+                          <div className="mt-4 p-4 bg-black/[0.03] rounded-2xl border border-black/5">
+                            <p className="text-[10px] font-bold text-black/60 italic leading-relaxed">"{book.details}"</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer: Lifecycle Timestamps */}
+                      <div className="pt-6 border-t border-black/5 flex justify-between items-center">
+                        <div className="flex gap-4">
+                          <div className="flex flex-col">
+                            <span className="text-[7px] font-black uppercase text-black/20">Created</span>
+                            <span className="text-[9px] font-bold">{new Date(book.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[7px] font-black uppercase text-black/20">Synchronized</span>
+                            <span className="text-[9px] font-bold">{new Date(book.updated_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        {isApproved ? (
+                          <button onClick={() => window.print()} className="px-6 py-3 rounded-full bg-black text-white text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-2">
+                            <Download size={14} /> Download Pass
+                          </button>
+                        ) : (
+                          <div className="px-6 py-3 rounded-full bg-black/5 border border-black/10 text-[9px] font-black uppercase tracking-widest text-black/20">
+                            Awaiting Dispatch
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Security Instruction */}
+                    {isApproved && (
+                      <div className="bg-semantic-green/5 border-t border-semantic-green/10 py-3 text-center">
+                        <p className="text-[8px] font-black text-semantic-green uppercase tracking-[0.2em]">Validated Slot - Present this Digital Pass at Junction</p>
+                      </div>
+                    )}
                   </div>
-                  {book.status === 'approved' && (
-                    <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-                      <Download size={16} /> Print Ticket
-                    </button>
+                  
+                  {/* Ticket Notches */}
+                  {isApproved && (
+                    <>
+                      <div className="absolute left-[-12px] top-[40px] h-6 w-6 rounded-full bg-white border-r border-brand-blue/30" />
+                      <div className="absolute right-[-12px] top-[40px] h-6 w-6 rounded-full bg-white border-l border-brand-blue/30" />
+                    </>
                   )}
                 </div>
-                {book.status === 'approved' && <div className="absolute -left-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white border-r border-black/5" />}
-                {book.status === 'approved' && <div className="absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white border-l border-black/5" />}
-              </div>
-            ))}
+              );
+            })}
             {userBookings.length === 0 && (
                <div className="h-64 flex flex-col items-center justify-center opacity-20 text-center">
                   <TicketIcon size={48} className="mb-4" />
