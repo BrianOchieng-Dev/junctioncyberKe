@@ -80,6 +80,12 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
 
     try {
       if (modalType === 'book') {
+        if (!user) {
+          toast.warn('Please synchronize your account profile (Login) before initiating a booking.');
+          setFormLoading(false);
+          return;
+        }
+
         const dateVal = formData.get('date') as string;
         const timeVal = formData.get('time') as string;
         const phoneVal = formData.get('phone') as string;

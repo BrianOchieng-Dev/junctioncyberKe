@@ -11,11 +11,15 @@ export default function About() {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data: gpData } = await supabase.from('site_settings').select('value').eq('key', 'group_photo').single();
-      if (gpData) setGroupPhoto(gpData.value);
-      
-      const { data: slData } = await supabase.from('site_settings').select('value').eq('key', 'about_slogan').single();
-      if (slData) setSlogan(slData.value);
+      try {
+        const { data: gpData } = await supabase.from('site_settings').select('value').eq('key', 'group_photo').maybeSingle();
+        if (gpData?.value) setGroupPhoto(gpData.value);
+        
+        const { data: slData } = await supabase.from('site_settings').select('value').eq('key', 'about_slogan').maybeSingle();
+        if (slData?.value) setSlogan(slData.value);
+      } catch (err) {
+        console.warn('Settings synchronization offline');
+      }
     };
     fetchSettings();
   }, []);
