@@ -267,9 +267,25 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
                           </div>
                         </div>
                         {isApproved ? (
-                          <button onClick={() => window.print()} className="px-6 py-3 rounded-full bg-black text-white text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-2">
-                            <Download size={14} /> Download Pass
-                          </button>
+                          <div className="flex gap-2">
+                            {book.edit_count < 3 && (
+                              <button 
+                                onClick={() => {
+                                  const newDate = prompt("Enter new Date (YYYY-MM-DD):", book.date);
+                                  const newTime = prompt("Enter new Time (HH:MM):", book.time);
+                                  if (newDate && newTime) {
+                                    handleUpdateBooking(book.id, newDate, newTime, book.edit_count);
+                                  }
+                                }} 
+                                className="px-6 py-3 rounded-full bg-white border border-black/10 text-black text-[9px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all shadow-lg flex items-center gap-2"
+                              >
+                                <Edit3 size={14} /> Edit ({3 - book.edit_count} Left)
+                              </button>
+                            )}
+                            <button onClick={() => window.print()} className="px-6 py-3 rounded-full bg-black text-white text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-2">
+                              <Download size={14} /> Download Pass
+                            </button>
+                          </div>
                         ) : (
                           <div className="px-6 py-3 rounded-full bg-black/5 border border-black/10 text-[9px] font-black uppercase tracking-widest text-black/20">
                             Awaiting Dispatch
