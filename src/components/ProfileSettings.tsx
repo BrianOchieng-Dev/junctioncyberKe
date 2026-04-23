@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
-import { User, Mail, Phone, MapPin, Save, Camera, LogOut, Car, Star, Award, MessageSquare, Ticket as TicketIcon, Download, Clock, Calendar } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Save, Camera, LogOut, Car, Star, Award, MessageSquare, Ticket as TicketIcon, Download, Clock, Calendar, Edit3 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { cn } from '../lib/utils';
 import LoadingSpinner from './LoadingSpinner';
@@ -25,6 +25,26 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
   const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
   const [inquiryMessages, setInquiryMessages] = useState<any[]>([]);
   const [userBookings, setUserBookings] = useState<any[]>([]);
+
+  const handleUpdateBooking = async (id: string, date: string, time: string, currentCount: number) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ 
+          date, 
+          time, 
+          edit_count: currentCount + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success('Ticket coordinates updated!');
+      fetchUserBookings();
+    } catch (err: any) {
+      toast.error('Modification failed: ' + err.message);
+    }
+  };
 
   const handleLogout = async () => {
     try {
