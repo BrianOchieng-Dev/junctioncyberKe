@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Cpu, Scissors, Sparkles, Shirt, ArrowUpRight, Calendar, Download, Ticket as TicketIcon, Zap, Crown, Droplets, Waves } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
+import { useLanguage } from '../context/LanguageContext';
 
 const categories = [
   { id: 'cyber', title: 'Cyber Services', icon: Zap, color: 'from-blue-500 to-cyan-400' },
@@ -52,6 +53,7 @@ interface ServicesProps {
 }
 
 export default function Services({ onBook, onGetTicket }: ServicesProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('cyber');
   const [compareSlider, setCompareSlider] = useState(50);
 
@@ -60,8 +62,8 @@ export default function Services({ onBook, onGetTicket }: ServicesProps) {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div className="max-w-2xl">
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-[#1D1D1F]"> Our <span className="text-black/40 italic">Signature</span> Verticals</h2>
-            <p className="text-lg text-black/50">Comprehensive services designed to cater to every facet of your premium lifestyle.</p>
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-[#1D1D1F]"> {t('services_title').split(' ')[0]} <span className="text-black/40 italic">{t('services_title').split(' ').slice(1).join(' ')}</span></h2>
+            <p className="text-lg text-black/50">{t('services_desc')}</p>
           </div>
         </div>
 
@@ -79,7 +81,7 @@ export default function Services({ onBook, onGetTicket }: ServicesProps) {
               )}
             >
               <cat.icon size={18} className="md:w-5 md:h-5" />
-              <span className="text-sm md:text-base">{cat.title.split(' ')[0]}</span>
+              <span className="text-sm md:text-base">{t(`cat_${cat.id}`).split(' ')[0]}</span>
             </button>
           ))}
         </div>
@@ -96,7 +98,7 @@ export default function Services({ onBook, onGetTicket }: ServicesProps) {
                 className="space-y-6"
               >
                 <div className="mb-8">
-                  <h3 className="text-3xl font-bold text-[#1D1D1F] mb-2">{categories.find(c => c.id === activeTab)?.title}</h3>
+                  <h3 className="text-3xl font-bold text-[#1D1D1F] mb-2">{t(`cat_${activeTab}`)}</h3>
                   <div className="h-1.5 w-12 bg-brand-blue rounded-full" />
                 </div>
 
@@ -118,13 +120,13 @@ export default function Services({ onBook, onGetTicket }: ServicesProps) {
                         onClick={() => onBook(service.title)}
                         className="flex-1 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-white px-6 py-3 bg-brand-blue rounded-full shadow-lg shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all"
                       >
-                        <Calendar size={16} /> Book Now
+                        <Calendar size={16} /> {t('book_now')}
                       </button>
                       <button 
                         onClick={() => onGetTicket(service.title)}
                         className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-[#1D1D1F] px-6 py-3 bg-black/5 hover:bg-black/10 rounded-full transition-all"
                       >
-                        <TicketIcon size={16} /> Get Ticket
+                        <TicketIcon size={16} /> {t('get_ticket')}
                       </button>
                     </div>
                   </motion.div>

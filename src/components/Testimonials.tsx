@@ -24,13 +24,13 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="py-24 px-4">
+    <section className="py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-16 text-[#1D1D1F]">
+        <h2 className="text-4xl font-bold text-center mb-8 text-[#1D1D1F]">
           Reserved for <span className="text-black/40 italic">Excellence</span>
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {testimonials.map((t, i) => (
             <motion.div
               key={i}

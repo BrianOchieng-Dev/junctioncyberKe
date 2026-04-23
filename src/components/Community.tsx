@@ -8,9 +8,9 @@ interface CommunityProps {
 
 export default function Community({ isAuthenticated, onJoin }: CommunityProps) {
   return (
-    <section id="community" className="py-24 px-4 overflow-hidden relative">
+    <section id="community" className="py-12 px-4 overflow-hidden relative">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-8">
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
             Join the <span className="text-brand-blue">Community</span>
           </h2>
@@ -36,7 +36,7 @@ export default function Community({ isAuthenticated, onJoin }: CommunityProps) {
             </div>
           )}
 
-          <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 ${!isAuthenticated ? 'opacity-20 pointer-events-none' : ''}`}>
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${!isAuthenticated ? 'opacity-20 pointer-events-none' : ''}`}>
             {[
               { icon: MessageCircle, title: "Private Lounge", desc: "Real-time discussions with industry experts in our premium cyber channels." },
               { icon: Users, title: "Executive Networking", desc: "Discover and connect with like-minded members from our multi-business hub." },

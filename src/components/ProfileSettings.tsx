@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
-import { User, Mail, Phone, MapPin, Save, Camera, LogOut } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Save, Camera, LogOut, Car, Star, Award } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { cn } from '../lib/utils';
 import LoadingSpinner from './LoadingSpinner';
@@ -12,6 +12,7 @@ interface Profile {
   phone: string;
   address: string;
   avatar_url: string;
+  loyalty_points?: number;
 }
 
 export default function ProfileSettings({ user, onClose }: { user: any, onClose: () => void }) {
@@ -184,7 +185,7 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-black/30 ml-2">Full Name</label>
+          <label className="text-xs font-bold text-black/40 ml-2">Full Name</label>
           <div className="relative">
             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
             <input 
@@ -198,7 +199,7 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-black/30 ml-2">Phone Number</label>
+          <label className="text-xs font-bold text-black/40 ml-2">Phone Number</label>
           <div className="relative">
             <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
             <input 
@@ -217,9 +218,8 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
           </div>
           {errors.phone && <p className="text-[10px] text-red-500 font-bold ml-2 animate-shake">{errors.phone}</p>}
         </div>
-
         <div className="md:col-span-2 space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-black/30 ml-2">Primary Address</label>
+          <label className="text-xs font-bold text-black/40 ml-2">Primary Address</label>
           <div className="relative">
             <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
             <input 
@@ -233,10 +233,28 @@ export default function ProfileSettings({ user, onClose }: { user: any, onClose:
                 "w-full pl-12 pr-4 py-3.5 bg-black/5 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium border border-transparent focus:border-brand-blue/10",
                 errors.address && "border-red-500/50 bg-red-50/50"
               )}
-              placeholder="e.g. Karen, Nairobi"
+              placeholder="Nairobi, Kenya"
             />
           </div>
           {errors.address && <p className="text-[10px] text-red-500 font-bold ml-2 animate-shake">{errors.address}</p>}
+        </div>
+
+        <div className="md:col-span-2 glass-card p-4 bg-brand-blue/5 border-brand-blue/10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+              <Award size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-black/40">Member Loyalty Points</p>
+              <p className="text-xl font-black text-brand-blue">{profile.loyalty_points || 0} <span className="text-xs text-black/40">points</span></p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-black/40">Status Tier</p>
+            <p className="text-xs font-bold text-brand-blue">
+              {(profile.loyalty_points || 0) > 1000 ? 'Platinum Elite' : (profile.loyalty_points || 0) > 500 ? 'Gold Select' : 'Silver Member'}
+            </p>
+          </div>
         </div>
       </div>
 

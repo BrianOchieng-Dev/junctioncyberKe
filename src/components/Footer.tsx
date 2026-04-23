@@ -2,11 +2,11 @@ import { Facebook, Instagram, Twitter, Mail, MapPin, Phone } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer id="contact" className="py-20 px-4 relative mt-20">
+    <footer id="contact" className="py-10 px-4 relative mt-10">
       {/* Footer Top Border */}
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent" />
       
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="space-y-6">
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-full bg-brand-blue" />
@@ -69,7 +69,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-black/30 tracking-widest uppercase font-medium">
+      <div className="max-w-7xl mx-auto mt-10 pt-4 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-black/30 tracking-widest uppercase font-medium">
         <span>© 2026 THE JUNCTION CYBER. ALL RIGHTS RESERVED.</span>
         <div className="flex gap-8">
           <a href="#" className="hover:text-[#1D1D1F] transition-colors">Privacy Policy</a>

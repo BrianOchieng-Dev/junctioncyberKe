@@ -28,6 +28,8 @@ import InquiryForm from './components/InquiryForm';
 import PromotionsPoster from './components/PromotionsPoster';
 import ProfileSettings from './components/ProfileSettings';
 import LoadingSpinner from './components/LoadingSpinner';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthGate from './components/AuthGate';
 
 function NotFound() {
   return (
@@ -46,14 +48,14 @@ function NotFound() {
 
 interface LayoutProps {
   children: ReactNode;
-  user: any;
   modalType: string | null;
   setModalType: (type: any) => void;
   t: (key: string) => string;
   onOpenProfile?: () => void;
 }
 
-function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: LayoutProps) {
+function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutProps) {
+  const { user } = useAuth();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
   const [formLoading, setFormLoading] = useState(false);
@@ -69,7 +71,7 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
       name: formData.get('name'),
       email: formData.get('email'),
       service: serviceVal || modalType,
-      message: formData.get('message'),
+      message: `${formData.get('message')}${formData.get('car_plate') ? ` | Car Plate: ${formData.get('car_plate')}` : ''}`,
       status: 'unread',
       type: modalType
     };
@@ -101,9 +103,8 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
         onSignIn={() => setModalType('auth')} 
         onOpenProfile={onOpenProfile} 
         onBook={() => setModalType('book')}
-        user={user} 
       />
-      <div className="relative pt-20">{children}</div>
+      <div className="relative pt-10">{children}</div>
       <WhatsAppButton />
       <Modal isOpen={modalType !== null} onClose={() => setModalType(null)} title={modalType === 'quote' ? t('request_quote') : modalType === 'book' ? t('book_now') : modalType === 'ticket' ? 'Your Secure Ticket' : modalType === 'profile' ? 'Profile Customization' : 'Community Access'}>
         {modalType === 'auth' ? <AuthModalContent onClose={() => setModalType(null)} /> : modalType === 'profile' ? <ProfileSettings user={user} onClose={() => setModalType(null)} /> : modalType === 'ticket' ? (
@@ -154,17 +155,17 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
         ) : (
           <form className="space-y-4" onSubmit={handleFormSubmit}>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-black/40">Full Name</label>
-              <input type="text" name="name" required className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
+              <label className="text-xs font-bold text-black/40 ml-2">Full Name</label>
+              <input type="text" name="name" required placeholder="John Doe" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-black/40">Email Address</label>
-              <input type="email" name="email" required className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
+              <label className="text-xs font-bold text-black/40 ml-2">Email Address</label>
+              <input type="email" name="email" required placeholder="john@example.com" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
             </div>
             {modalType === 'book' && (
               <>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-black/40">Preferred Service</label>
+                  <label className="text-xs font-bold text-black/40 ml-2">Preferred Service</label>
                   <select name="service" defaultValue="" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium">
                     <option value="" disabled>Select a Service</option>
                     <optgroup label="Cyber Services">
@@ -199,7 +200,16 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-black/40">Preferred Date</label>
+                  <label className="text-xs font-bold text-black/40 ml-2">Car Plate Number (For Carwash)</label>
+                  <input 
+                    type="text" 
+                    name="car_plate" 
+                    placeholder="KAA 001A" 
+                    className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-black/40 ml-2">Preferred Date</label>
                   <input 
                     type="date" 
                     name="date"
@@ -211,8 +221,8 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
               </>
             )}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-black/40">Details / Message</label>
-              <textarea name="message" rows={3} className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium text-black/60"></textarea>
+              <label className="text-xs font-bold text-black/40 ml-2">Details / Message</label>
+              <textarea name="message" rows={3} placeholder="Tell us more about your request..." className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium text-black/60"></textarea>
             </div>
             <button type="submit" disabled={formLoading} className="w-full flex items-center justify-center gap-3 rounded-full bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-transform active:scale-95 disabled:opacity-50">
               {formLoading ? (
@@ -233,33 +243,27 @@ function Layout({ children, user, modalType, setModalType, t, onOpenProfile }: L
 }
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { user, loading: authLoading } = useAuth();
   const [modalType, setModalType] = useState<'quote' | 'inquiry' | 'book' | 'auth' | 'ticket' | 'profile' | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setInitialLoading(false);
-    });
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setInitialLoading(false);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (initialLoading) {
+  if (authLoading) {
     return <LoadingSpinner fullScreen />;
   }
 
   return (
-    <LanguageProvider>
-      <InquiryProvider user={user}>
-        <LanguageConsumer user={user} modalType={modalType} setModalType={setModalType} />
-      </InquiryProvider>
-    </LanguageProvider>
+    <InquiryProvider user={user}>
+      <LanguageConsumer user={user} modalType={modalType} setModalType={setModalType} />
+    </InquiryProvider>
   );
 }
 
@@ -272,7 +276,6 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
         <Routes>
           <Route path="/" element={
             <Layout 
-              user={user} 
               modalType={modalType} 
               setModalType={setModalType} 
               t={t} 
@@ -294,7 +297,6 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
           } />
           <Route path="/services" element={
             <Layout 
-              user={user} 
               modalType={modalType} 
               setModalType={setModalType} 
               t={t} 
@@ -307,7 +309,6 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
           } />
           <Route path="/gallery" element={
             <Layout 
-              user={user} 
               modalType={modalType} 
               setModalType={setModalType} 
               t={t} 
@@ -320,7 +321,6 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
           } />
           <Route path="/about" element={
             <Layout 
-              user={user} 
               modalType={modalType} 
               setModalType={setModalType} 
               t={t} 
@@ -332,10 +332,13 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
               <Footer />
             </Layout>
           } />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={
+            <AuthGate requireAdmin>
+              <AdminDashboard />
+            </AuthGate>
+          } />
           <Route path="*" element={
             <Layout 
-              user={user} 
               modalType={modalType} 
               setModalType={setModalType} 
               t={t} 

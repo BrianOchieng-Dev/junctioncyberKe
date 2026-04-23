@@ -3,6 +3,7 @@ import { ChevronRight, FileText, HelpCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { cn } from '../lib/utils';
 
 const homeImages = [
   'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1600',
@@ -37,26 +38,71 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
   useEffect(() => {
     const fetchHeroBg = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('site_settings')
           .select('value')
           .eq('key', 'hero_bg')
-          .single();
-        if (data?.value) setCustomBg(data.value);
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching hero background:', error);
+          return;
+        }
+        
+        if (data?.value) {
+          console.log('Successfully loaded custom background:', data.value);
+          setCustomBg(data.value);
+        } else {
+          console.log('No custom background found in site_settings.');
+        }
       } catch (err) {
-        console.warn('Hero background override not found.');
+        console.warn('Hero background fetch failed:', err);
       }
     };
     fetchHeroBg();
+ 
+    // Subscribe to realtime updates for hero background
+    const channel = supabase
+      .channel('hero_bg_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.hero_bg'
+        },
+        (payload) => {
+          console.log('Realtime background update:', payload.new.value);
+          setCustomBg(payload.new.value);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'site_settings',
+          filter: 'key=eq.hero_bg'
+        },
+        (payload) => {
+          setCustomBg(payload.new.value);
+        }
+      )
+      .subscribe();
 
     const timer = setInterval(() => {
       setCurrentImg((prev) => (prev + 1) % homeImages.length);
     }, 6000);
-    return () => clearInterval(timer);
+
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
-    <section ref={containerRef} style={{ position: 'relative' }} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20 text-center overflow-hidden">
+    <section ref={containerRef} style={{ position: 'relative' }} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-10 text-center overflow-hidden">
       {/* Dynamic Mesh Animation */}
       <div className="absolute inset-0 -z-30">
         <motion.div 
@@ -85,7 +131,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
       <motion.div style={{ y: bgY, opacity: bgOpacity }} className="absolute inset-0 -z-20">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentImg}
+            key={customBg ? 'custom' : currentImg}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
@@ -94,14 +140,20 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
           >
             <img 
               src={customBg || homeImages[currentImg]} 
-              className="h-full w-full object-cover grayscale opacity-25 scale-110 transition-all duration-1000" 
+              className={cn(
+                "h-full w-full object-cover scale-110 transition-all duration-1000",
+                customBg ? "opacity-60" : "grayscale opacity-25"
+              )} 
               alt="Hero Background" 
               referrerPolicy="no-referrer"
             />
           </motion.div>
         </AnimatePresence>
         {/* Glass Overlays for White Aesthetics */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#fbfbfd]/80 via-[#fbfbfd]/30 to-[#fbfbfd]" />
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-b from-[#fbfbfd] via-[#fbfbfd]/30 to-[#fbfbfd]",
+          customBg ? "opacity-40" : "opacity-80"
+        )} />
         <div className="absolute inset-0 backdrop-blur-[1px]" />
       </motion.div>
 
@@ -115,7 +167,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
         style={{ y: textY, opacity: textOpacity }}
         className="z-10"
       >
-        <span className="mb-4 inline-block rounded-full border border-black/5 bg-black/5 px-4 py-1.5 text-[10px] md:text-xs font-semibold tracking-widest uppercase text-black/40 backdrop-blur-md">
+        <span className="mb-2 inline-block rounded-full border border-black/5 bg-black/5 px-4 py-1 text-[10px] md:text-xs font-semibold tracking-widest uppercase text-black/40 backdrop-blur-md">
           {t('hero_tag')}
         </span>
         <h1 className="max-w-4xl text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-[#1D1D1F] lg:leading-[1.1] px-2">
@@ -128,7 +180,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
           {t('hero_desc')}
         </p>
 
-        <div className="mt-8 md:mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row px-4">
+        <div className="mt-4 md:mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row px-4">
           <button className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-[#1D1D1F] px-8 py-4 font-bold text-white transition-all hover:bg-brand-blue group">
             {t('explore_btn')}
             <ChevronRight className="transition-transform group-hover:translate-x-1" size={20} />
@@ -146,7 +198,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
       </motion.div>
 
       {/* Floating Glass Stats */}
-      <div className="mt-16 md:mt-24 grid w-full max-w-5xl grid-cols-2 gap-3 md:gap-4 md:grid-cols-4 px-4 z-10">
+      <div className="mt-8 md:mt-12 grid w-full max-w-5xl grid-cols-2 gap-3 md:gap-4 md:grid-cols-4 px-4 z-10">
         {[
           { label: 'Happy Clients', value: '15k+' },
           { label: 'Cyber Speed', value: '1Gbps' },
@@ -161,7 +213,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
             className="glass-card flex flex-col items-center justify-center p-6 text-center border-white/60 shadow-lg"
           >
             <span className="text-2xl font-bold text-brand-blue">{stat.value}</span>
-            <span className="text-xs font-medium uppercase tracking-widest text-[#1D1D1F]/40">{stat.label}</span>
+            <span className="text-xs font-bold text-[#1D1D1F]/40">{stat.label}</span>
           </motion.div>
         ))}
       </div>

@@ -7,8 +7,8 @@ export default function AboutSummary() {
   const { t } = useLanguage();
 
   return (
-    <section className="py-24 px-4 overflow-hidden">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+    <section className="py-12 px-4 overflow-hidden">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-8">
         <div className="w-full lg:w-1/2 relative">
           <div className="glass-card p-2 aspect-video overflow-hidden border-white/60">
             <img 
@@ -28,7 +28,7 @@ export default function AboutSummary() {
             Technology Meets <br />
             <span className="text-black/40">Artisanal Skill.</span>
           </h2>
-          <p className="text-lg text-black/60 mb-10 leading-relaxed max-w-xl">
+          <p className="text-lg text-black/60 mb-5 leading-relaxed max-w-xl">
             Established as a curation of excellence, The Junction Cyber provides an ecosystem where high-performance digital services flourish alongside traditional precision grooming and master-class detailing.
           </p>
           <Link 

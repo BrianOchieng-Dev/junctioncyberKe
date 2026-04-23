@@ -25,9 +25,9 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 px-4 bg-black/[0.02]">
+    <section id="faq" className="py-12 px-4 bg-black/[0.02]">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-[#1D1D1F]">Common Questions</h2>
           <p className="text-black/40">Everything you need to know about The Junction experience.</p>
         </div>

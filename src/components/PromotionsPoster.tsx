@@ -59,9 +59,9 @@ export default function PromotionsPoster() {
   if (loading || promotions.length === 0) return null;
 
   return (
-    <section className="py-12 px-4">
+    <section className="py-6 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-3">
           <div className="h-8 w-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
             <Megaphone size={16} />
           </div>

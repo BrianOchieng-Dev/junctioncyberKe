@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 
 import { useLanguage } from '../context/LanguageContext';
 import { useInquiries } from '../context/InquiryContext';
+import { useAuth } from '../context/AuthContext';
 
 const navLinks = [
   { name: 'nav_home', href: '/' },
@@ -19,14 +20,13 @@ interface NavbarProps {
   onSignIn: () => void;
   onOpenProfile?: () => void;
   onBook: () => void;
-  user: any;
 }
 
-export default function Navbar({ onSignIn, onOpenProfile, onBook, user }: NavbarProps) {
+export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const { unreadCount } = useInquiries();
-  const isAdmin = user?.email === 'junctioncyber23@gmail.com';
+  const { user, isAdmin } = useAuth();
 
   return (
     <motion.nav
@@ -55,7 +55,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook, user }: Navbar
               <a
                 key={link.name}
                 href={link.href}
-                className="text-[10px] font-black text-[#1D1D1F]/40 transition-colors hover:text-brand-blue uppercase tracking-[0.2em]"
+                className="text-xs font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
               >
                 {t(link.name)}
               </a>
@@ -63,7 +63,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook, user }: Navbar
               <Link
                 key={link.name}
                 to={link.href}
-                className="text-[10px] font-black text-[#1D1D1F]/40 transition-colors hover:text-brand-blue uppercase tracking-[0.2em]"
+                className="text-xs font-bold text-[#1D1D1F]/40 transition-colors hover:text-brand-blue tracking-tight"
               >
                 {t(link.name)}
               </Link>
@@ -132,11 +132,11 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook, user }: Navbar
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-blue/10 text-brand-blue font-bold text-[10px] uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all shadow-sm"
               >
                  <User size={14} />
-                 Sign In
+                 {t('sign_in')}
               </button>
             )}
 
-            <button onClick={onBook} className="rounded-full bg-[#1D1D1F] px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-transform hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
+            <button onClick={onBook} className="rounded-full bg-[#1D1D1F] px-8 py-3 text-xs font-bold text-white transition-transform hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
               {t('book_now')}
             </button>
           </div>

@@ -1,7 +1,9 @@
 import { motion } from 'motion/react';
 import { Shield, Zap, Heart } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function About() {
+  const { t } = useLanguage();
   return (
     <section id="about" className="py-24 px-4 overflow-hidden">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-20">
@@ -31,14 +33,11 @@ export default function About() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-8 leading-tight text-[#1D1D1F]">
-              A Junction of <br />
-              <span className="text-black/40">Technology & Tradition.</span>
+              {t('about_title_1')} <br />
+              <span className="text-black/40">{t('about_title_2')}</span>
             </h2>
             <p className="text-lg text-black/60 mb-10">
-              Founded on the pillars of excellence, The Junction Cyber is more than just a multi-service center. 
-              We are a curated ecosystem where high-performance digital services meet artisanal grooming 
-              and automotive perfection. Each of our verticals is managed by industry veterans who 
-              prioritize your experience above all else.
+              {t('about_desc')}
             </p>
 
             <div className="space-y-8">

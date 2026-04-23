@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -18,7 +19,9 @@ import {
   User,
   Save,
   Bell,
-  Home
+  Home,
+  RefreshCw,
+  Camera
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
@@ -28,6 +31,7 @@ import { ToastContainer, toast } from 'react-toastify';
 
 import { supabase } from '../lib/supabase';
 import { useInquiries } from '../context/InquiryContext';
+import { useAuth } from '../context/AuthContext';
 
 type Tab = 'overview' | 'showcase' | 'team' | 'promotions' | 'inbox' | 'scheduler' | 'logistics' | 'settings';
 
@@ -45,16 +49,23 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const { user, signOut } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [heroBg, setHeroBg] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
   const { unreadCount, resetCount } = useInquiries();
 
   // Gallery State
   const GALLERY_CATEGORIES = ['Cyber Services', 'Precision Barber', 'Elite Carwash', 'Premium Laundry'];
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
-  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryLoading, setGalleryLoading] = useState(true);
+  
+  // Carwash Showcase States
+  const [carwashItems, setCarwashItems] = useState<any[]>([]);
+  const [carwashForm, setCarwashForm] = useState({ before: '', after: '', model: '' });
+  const [carwashLoading, setCarwashLoading] = useState(false);
+  const [uploadingCarwash, setUploadingCarwash] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(GALLERY_CATEGORIES[0]);
   const [galleryImageUrl, setGalleryImageUrl] = useState('');
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -72,13 +83,12 @@ export default function AdminDashboard() {
   const [uploadingPromo, setUploadingPromo] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-    
     // Fetch initial data
     fetchSettings();
     fetchInquiries();
     fetchGalleryItems();
     fetchPromotions();
+    fetchCarwashItems();
 
     // Subscribe to new inquiries
     const channel = supabase
@@ -96,6 +106,13 @@ export default function AdminDashboard() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchCarwashItems = async () => {
+    setCarwashLoading(true);
+    const { data } = await supabase.from('carwash_showcase').select('*').order('created_at', { ascending: false });
+    if (data) setCarwashItems(data);
+    setCarwashLoading(false);
+  };
 
   const fetchInquiries = async () => {
     const { data, error } = await supabase
@@ -147,6 +164,35 @@ export default function AdminDashboard() {
       toast.error('Failed to save settings: ' + err.message);
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const handleUploadBg = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploadingBg(true);
+      if (!event.target.files || event.target.files.length === 0) return;
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `hero-bg-${Math.random()}.${fileExt}`;
+      const filePath = `settings/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setHeroBg(publicUrl);
+      toast.success('Background uploaded! Click Save to apply.');
+    } catch (error: any) {
+      toast.error('Upload failed: ' + error.message);
+    } finally {
+      setUploadingBg(false);
     }
   };
 
@@ -238,31 +284,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const isAdmin = user?.email === 'junctioncyber23@gmail.com';
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast.success('Logged out successfully');
   };
 
-  if (user && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFD] p-6 text-center text-[#1D1D1F]">
-        <div className="glass-card p-12 max-w-md bg-white border border-black/5 shadow-2xl">
-          <Settings size={48} className="mx-auto text-red-500 mb-6" />
-          <h2 className="text-2xl font-black mb-4">Access Restricted</h2>
-          <p className="text-black/40 font-medium mb-8">This dashboard is reserved for Junction Admins only.</p>
-          <Link to="/" className="inline-block px-8 py-3 bg-brand-blue text-white rounded-full font-bold shadow-lg shadow-brand-blue/20">Return to Main Site</Link>
-        </div>
-      </div>
-    );
-  }
-
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'showcase', label: 'Gallery', icon: ImageIcon },
+    { id: 'showcase', label: 'Gallery', icon: Layers },
+    { id: 'carwash', label: 'Carwash', icon: Droplets },
     { id: 'team', label: 'Team', icon: Users },
-    { id: 'promotions', label: 'Promotions', icon: Tag },
+    { id: 'promotions', label: 'Promotions', icon: Megaphone },
     { id: 'inbox', label: 'Inbox', icon: MessageSquare },
     { id: 'scheduler', label: 'Bookings', icon: Calendar },
     { id: 'logistics', label: 'Logistics', icon: Truck },
@@ -301,7 +333,7 @@ export default function AdminDashboard() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-blue to-purple-600 shadow-[0_0_20px_rgba(0,122,255,0.3)] flex items-center justify-center">
               <div className="h-3 w-3 bg-white rounded-sm rotate-45" />
             </div>
-            <span className="font-black tracking-tighter text-xl uppercase text-[#1D1D1F]">Junction <span className="text-brand-blue">Admin</span></span>
+            <span className="font-black tracking-tighter text-xl text-[#1D1D1F]">Junction <span className="text-brand-blue">Admin</span></span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden h-10 w-10 flex items-center justify-center text-black/40">
             <Plus size={24} className="rotate-45" />
@@ -314,7 +346,7 @@ export default function AdminDashboard() {
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 text-black/40 hover:text-brand-blue hover:bg-brand-blue/5 mb-4 border border-transparent hover:border-brand-blue/10"
           >
             <Home size={20} />
-            <span className="font-bold text-sm tracking-tight text-brand-blue font-mono uppercase text-[10px] tracking-widest">Back to Site</span>
+            <span className="font-bold text-sm tracking-tight text-brand-blue font-mono text-[10px] tracking-widest">Back to site</span>
           </Link>
           {sidebarItems.map((item) => (
             <button
@@ -362,14 +394,12 @@ export default function AdminDashboard() {
         <div className="max-w-[1400px] mx-auto p-4 md:p-10 lg:p-12">
           <header className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 md:mb-16 gap-6">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-brand-blue font-black text-[10px] uppercase tracking-[0.3em]">
+              <div className="flex items-center gap-2 text-brand-blue font-black text-[10px] tracking-[0.2em]">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse shadow-[0_0_8px_rgba(0,122,255,0.4)]" /> 
-                Admin Dashboard
+                Admin dashboard
               </div>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tighter capitalize flex items-center gap-4 text-[#1D1D1F]">
+              <h1 className="text-2xl md:text-4xl font-black tracking-tighter capitalize text-[#1D1D1F]">
                 {activeTab.replace('_', ' ')}
-                <span className="text-black/10 hidden sm:inline">/</span>
-                <span className="text-black/30 text-xl font-bold lowercase tracking-normal hidden sm:inline">Panel</span>
               </h1>
             </div>
             
@@ -384,7 +414,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black uppercase text-black/40 tracking-wider">Session Key</p>
+                  <p className="text-[10px] font-black text-black/40 tracking-wider">Session key</p>
                   <p className="text-xs font-mono font-bold text-brand-blue opacity-80">JX-880-ALPHA</p>
                 </div>
                 <div className="h-8 w-[1px] bg-black/5" />
@@ -428,13 +458,13 @@ export default function AdminDashboard() {
                       )}
                     >
                       <div className="flex justify-between items-start mb-6">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-black/40">{stat.label}</span>
+                        <span className="text-[10px] font-bold tracking-[0.1em] text-black/40">{stat.label}</span>
                         <div className="h-6 w-6 rounded-full bg-black/5 flex items-center justify-center">
                           <Plus size={10} className="text-black/40" />
                         </div>
                       </div>
                       <p className="text-2xl md:text-3xl font-black tracking-tight text-[#1D1D1F]">{stat.val}</p>
-                      <div className="mt-4 text-[10px] font-bold text-brand-blue uppercase tracking-widest">{stat.change}</div>
+                      <div className="mt-4 text-[10px] font-bold text-brand-blue tracking-widest">{stat.change}</div>
                     </motion.div>
                   ))}
                 </div>
@@ -444,11 +474,11 @@ export default function AdminDashboard() {
                   <div className="lg:col-span-2 bg-gradient-to-br from-brand-blue to-purple-800 p-10 md:p-16 rounded-[48px] relative overflow-hidden group">
                     <div className="relative z-10 space-y-8">
                       <div className="space-y-4">
-                        <h3 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter text-white">Welcome to the<br/>Dashboard.</h3>
+                        <h3 className="text-3xl md:text-5xl font-black leading-tight tracking-tighter text-white">Welcome to the<br/>Dashboard.</h3>
                         <p className="text-lg text-white/80 max-w-md font-medium">Manage services, view customer inquiries, and update gallery showcases across the platform.</p>
                       </div>
-                      <button className="bg-white text-black font-black px-12 py-5 rounded-full text-sm uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                        New Announcement
+                      <button className="bg-white text-black font-black px-12 py-5 rounded-full text-sm tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                        New announcement
                       </button>
                     </div>
                     {/* Abstract technical visual */}
@@ -465,7 +495,7 @@ export default function AdminDashboard() {
                       <Users size={40} className="text-brand-blue" />
                     </div>
                     <h4 className="text-2xl font-black mb-4 text-[#1D1D1F]">Team Overview</h4>
-                    <p className="text-sm text-black/40 leading-relaxed font-medium mb-8 uppercase tracking-widest">5 Active Members <br/>Online</p>
+                    <p className="text-sm text-black/40 leading-relaxed font-medium mb-8 tracking-widest">5 Active members <br/>online</p>
                     <button className="w-full py-4 rounded-2xl bg-black/5 border border-transparent font-bold hover:bg-black/10 transition-all text-[#1D1D1F]">Manage Team</button>
                   </div>
                 </div>
@@ -474,7 +504,7 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   <div className="bg-white border border-black/5 p-8 rounded-[40px] shadow-sm">
                     <div className="flex items-center justify-between mb-8">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-black/40">Recent Activity</h4>
+                      <h4 className="text-sm font-black tracking-widest text-black/40">Recent activity</h4>
                       <MessageSquare size={16} className="text-brand-blue" />
                     </div>
                     <div className="space-y-6">
@@ -483,7 +513,7 @@ export default function AdminDashboard() {
                           <div className="h-10 w-10 rounded-full bg-black/5 shrink-0 border border-black/5" />
                           <div className="space-y-1">
                             <p className="text-sm font-bold group-hover:text-brand-blue transition-colors text-[#1D1D1F]">New Booking Received</p>
-                            <p className="text-[10px] font-medium text-black/40 uppercase tracking-widest leading-none">2m ago • Confirmed</p>
+                            <p className="text-[10px] font-medium text-black/40 tracking-widest leading-none">2m ago • Confirmed</p>
                           </div>
                         </div>
                       ))}
@@ -492,11 +522,11 @@ export default function AdminDashboard() {
                   
                   <div className="lg:col-span-2 bg-white border border-black/5 p-8 rounded-[40px] shadow-sm flex items-center justify-between overflow-hidden relative group">
                     <div className="space-y-6 flex-grow max-w-lg">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-black/40">Logistics Update</h4>
+                      <h4 className="text-sm font-black tracking-widest text-black/40">Logistics update</h4>
                       <p className="text-2xl font-bold tracking-tight text-[#1D1D1F]">Curtains & Carpets collection finalized for Karen Residence.</p>
                       <div className="flex gap-4">
-                        <button className="px-6 py-2 rounded-xl bg-brand-blue/10 text-brand-blue font-black text-[10px] uppercase tracking-widest border border-brand-blue/20 hover:bg-brand-blue hover:text-white transition-all shadow-sm">Send Driver</button>
-                        <button className="px-6 py-2 rounded-xl bg-black/5 text-black/40 font-black text-[10px] uppercase tracking-widest border border-transparent hover:bg-black/10 transition-all">Mark Done</button>
+                        <button className="px-6 py-2 rounded-xl bg-brand-blue/10 text-brand-blue font-black text-[10px] tracking-widest border border-brand-blue/20 hover:bg-brand-blue hover:text-white transition-all shadow-sm">Send driver</button>
+                        <button className="px-6 py-2 rounded-xl bg-black/5 text-black/40 font-black text-[10px] tracking-widest border border-transparent hover:bg-black/10 transition-all">Mark done</button>
                       </div>
                     </div>
                     <Truck size={120} className="absolute -right-10 opacity-5 -rotate-12 group-hover:-rotate-0 transition-transform duration-1000 text-[#1D1D1F]" />
@@ -517,7 +547,7 @@ export default function AdminDashboard() {
                   selectedInquiry !== null && "hidden lg:flex"
                 )}>
                   <div className="flex justify-between items-center mb-8">
-                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-2">Inbox</h3>
+                     <h3 className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-2">Inbox</h3>
                      <button 
                        onClick={async () => {
                          const { error } = await supabase.from('inquiries').update({ status: 'read' }).eq('status', 'unread');
@@ -527,7 +557,7 @@ export default function AdminDashboard() {
                            toast.success('All marked as read');
                          }
                        }}
-                       className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-blue hover:text-brand-blue/80"
+                       className="text-[10px] font-black tracking-[0.2em] text-brand-blue hover:text-brand-blue/80"
                      >
                        Mark All
                      </button>
@@ -555,7 +585,7 @@ export default function AdminDashboard() {
                          </div>
                          <div className="min-w-0 pr-2 flex-grow">
                             <p className={cn("font-bold text-sm mb-0.5 truncate", selectedInquiryId === inquiry.id ? "text-white" : "text-[#1D1D1F]")}>{inquiry.name}</p>
-                            <p className={cn("text-[10px] font-black uppercase tracking-wider opacity-60", selectedInquiryId === inquiry.id ? "text-white" : "text-brand-blue")}>
+                            <p className={cn("text-[10px] font-black tracking-wider opacity-60", selectedInquiryId === inquiry.id ? "text-white" : "text-brand-blue")}>
                                {inquiry.service || 'General inquiry'}
                             </p>
                          </div>
@@ -565,7 +595,7 @@ export default function AdminDashboard() {
                       </button>
                     ))}
                     {inquiries.length === 0 && (
-                      <div className="text-center py-20 text-black/20 font-black uppercase tracking-widest text-[10px]">No messages</div>
+                      <div className="text-center py-20 text-black/20 font-black tracking-widest text-[10px]">No messages</div>
                     )}
                   </div>
                 </div>
@@ -585,8 +615,8 @@ export default function AdminDashboard() {
                            <div>
                              <h4 className="text-2xl font-black tracking-tighter truncate max-w-md text-[#1D1D1F]">{selectedInquiry.name}</h4>
                              <div className="flex items-center gap-3 mt-1">
-                               <span className="text-[10px] font-black uppercase text-brand-blue px-2.5 py-1 bg-brand-blue/10 rounded-full border border-brand-blue/20">{selectedInquiry.service || 'General'}</span>
-                               <span className="text-[10px] font-black uppercase text-black/40 truncate max-w-[200px]">{selectedInquiry.email}</span>
+                               <span className="text-[10px] font-black text-brand-blue px-2.5 py-1 bg-brand-blue/10 rounded-full border border-brand-blue/20">{selectedInquiry.service || 'General'}</span>
+                               <span className="text-[10px] font-black text-black/40 truncate max-w-[200px]">{selectedInquiry.email}</span>
                              </div>
                            </div>
                         </div>
@@ -602,7 +632,7 @@ export default function AdminDashboard() {
                              <div className="p-6 rounded-3xl rounded-tl-none bg-black/5 border border-black/5 text-black/80 font-medium leading-relaxed whitespace-pre-wrap">
                                {selectedInquiry.message}
                              </div>
-                             <p className="text-[10px] font-black text-black/30 uppercase tracking-widest ml-1">
+                             <p className="text-[10px] font-black text-black/30 tracking-widest ml-1">
                                Received {new Date(selectedInquiry.created_at).toLocaleString()}
                              </p>
                           </div>
@@ -612,7 +642,7 @@ export default function AdminDashboard() {
                       <div className="p-6 md:p-8 bg-black/5 border-t border-black/5">
                         <div className="flex items-center gap-4 bg-white border border-black/10 p-2.5 rounded-[28px] focus-within:ring-4 focus-within:ring-brand-blue/20 transition-all shadow-sm">
                            <input type="text" placeholder="Draft a reply..." className="flex-grow bg-transparent outline-none px-6 text-sm font-bold text-[#1D1D1F] placeholder:text-black/30" />
-                           <button className="h-12 px-10 rounded-2xl bg-brand-blue text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-brand-blue/20 hover:scale-105 transition-all flex items-center gap-2">
+                           <button className="h-12 px-10 rounded-2xl bg-brand-blue text-white font-black text-[10px] tracking-[0.1em] shadow-lg shadow-brand-blue/20 hover:scale-105 transition-all flex items-center gap-2">
                              Send <Send size={16} />
                            </button>
                         </div>
@@ -624,8 +654,8 @@ export default function AdminDashboard() {
                         <MessageSquare size={64} className="text-black/10" strokeWidth={1} />
                         <div className="absolute inset-0 rounded-full border border-brand-blue/10" />
                       </div>
-                      <h3 className="text-3xl font-black uppercase tracking-[0.2em] text-black/30 mb-4">No Conversation Selected</h3>
-                      <p className="text-sm font-bold text-black/20 max-w-xs leading-loose uppercase tracking-widest">Select a message from the inbox to view details.</p>
+                      <h3 className="text-3xl font-black tracking-[0.1em] text-black/30 mb-4">No conversation selected</h3>
+                      <p className="text-sm font-bold text-black/20 max-w-xs leading-loose tracking-widest">Select a message from the inbox to view details.</p>
                     </div>
                   )}
                 </div>
@@ -636,13 +666,13 @@ export default function AdminDashboard() {
               <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 <div className="bg-white border border-black/5 p-12 rounded-[56px] space-y-12 shadow-sm">
                    <div>
-                      <h3 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Manage <br/><span className="text-brand-blue">Gallery.</span></h3>
-                      <p className="text-black/40 font-bold uppercase text-[10px] tracking-[0.3em]">Sector: Select Category</p>
+                      <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Manage <span className="text-brand-blue ml-2">Gallery</span></h3>
+                      <p className="text-black/40 font-bold text-[10px] tracking-[0.2em]">Sector: Select category</p>
                    </div>
                    
                    <form onSubmit={handleAddGalleryItem} className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Category</label>
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Category</label>
                         <select 
                           value={selectedCategory}
                           onChange={(e) => setSelectedCategory(e.target.value)}
@@ -655,7 +685,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Image Source URL</label>
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Image source url</label>
                         <input 
                           type="url" 
                           value={galleryImageUrl}
@@ -674,7 +704,7 @@ export default function AdminDashboard() {
                       <button 
                          type="submit"
                          disabled={uploadingGallery} 
-                         className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                         className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs tracking-[0.2em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                       >
                          {uploadingGallery ? (
                             <>
@@ -691,13 +721,13 @@ export default function AdminDashboard() {
 
                 <div className="bg-white border border-black/5 p-12 rounded-[56px] relative overflow-hidden shadow-sm">
                    <div className="flex items-center justify-between mb-12">
-                     <h4 className="text-sm font-black uppercase tracking-[0.3em] text-black/40">Recent Uploads</h4>
+                     <h4 className="text-sm font-black tracking-[0.2em] text-black/40">Recent uploads</h4>
                      {galleryLoading && <div className="h-4 w-4 border-2 border-black/20 border-t-brand-blue rounded-full animate-spin" />}
                    </div>
                    
                    <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
                       {galleryItems.length === 0 && !galleryLoading && (
-                        <div className="text-center py-20 text-black/30 font-bold uppercase tracking-widest text-xs">No images published yet</div>
+                        <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No images published yet</div>
                       )}
                       {galleryItems.map(item => (
                         <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] flex items-center gap-8 group hover:bg-black/10 transition-all">
@@ -706,7 +736,7 @@ export default function AdminDashboard() {
                            </div>
                            <div className="min-w-0 pr-4">
                               <p className="text-sm font-black mb-1 truncate text-[#1D1D1F]">{item.category}</p>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-6">Published {new Date(item.created_at).toLocaleDateString()}</p>
+                              <p className="text-[10px] font-black tracking-widest text-black/40 mb-6">Published {new Date(item.created_at).toLocaleDateString()}</p>
                               <div className="flex gap-4">
                                 <button onClick={() => handleDeleteGalleryItem(item.id)} className="h-10 w-10 rounded-xl bg-white text-red-500 border border-black/5 shadow-sm flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                               </div>
@@ -718,17 +748,156 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
+            {activeTab === 'carwash' && (
+              <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                <div className="bg-white border border-black/5 p-12 rounded-[56px] space-y-12 shadow-sm">
+                   <div>
+                      <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Carwash <span className="text-brand-blue ml-2">Transformations</span></h3>
+                      <p className="text-black/40 font-bold text-[10px] tracking-[0.2em]">Sector: Automotive detailing</p>
+                   </div>
+                   
+                   <form onSubmit={async (e) => {
+                     e.preventDefault();
+                     setUploadingCarwash(true);
+                     const { error } = await supabase.from('carwash_showcase').insert([{
+                       before_url: carwashForm.before,
+                       after_url: carwashForm.after,
+                       car_model: carwashForm.model
+                     }]);
+                     if (!error) {
+                       toast.success('Transformation published!');
+                       setCarwashForm({ before: '', after: '', model: '' });
+                       fetchCarwashItems();
+                     }
+                     setUploadingCarwash(false);
+                   }} className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Car model</label>
+                        <input 
+                          type="text" 
+                          value={carwashForm.model}
+                          onChange={(e) => setCarwashForm({...carwashForm, model: e.target.value})}
+                          placeholder="e.g. Mercedes-Benz G-Wagon"
+                          className="w-full pl-6 pr-8 py-5 bg-black/5 border border-black/10 rounded-[32px] outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Before image url</label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="url" 
+                              value={carwashForm.before}
+                              onChange={(e) => setCarwashForm({...carwashForm, before: e.target.value})}
+                              placeholder="https://..."
+                              className="flex-grow pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-[28px] outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
+                            />
+                            <label className="h-12 w-12 rounded-2xl bg-black/5 border border-black/10 flex items-center justify-center cursor-pointer hover:bg-black/10 transition-all shrink-0">
+                               <Camera size={18} className="text-brand-blue" />
+                               <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                 const file = e.target.files?.[0];
+                                 if (!file) return;
+                                 const fileName = `${Date.now()}-before-${file.name}`;
+                                 const { data, error } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
+                                 if (data) {
+                                   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
+                                   setCarwashForm(prev => ({ ...prev, before: publicUrl }));
+                                 }
+                               }} />
+                            </label>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">After image url</label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="url" 
+                              value={carwashForm.after}
+                              onChange={(e) => setCarwashForm({...carwashForm, after: e.target.value})}
+                              placeholder="https://..."
+                              className="flex-grow pl-6 pr-8 py-4 bg-black/5 border border-black/10 rounded-[28px] outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] text-sm"
+                            />
+                            <label className="h-12 w-12 rounded-2xl bg-black/5 border border-black/10 flex items-center justify-center cursor-pointer hover:bg-black/10 transition-all shrink-0">
+                               <Camera size={18} className="text-brand-blue" />
+                               <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                 const file = e.target.files?.[0];
+                                 if (!file) return;
+                                 const fileName = `${Date.now()}-after-${file.name}`;
+                                 const { data, error } = await supabase.storage.from('avatars').upload(`carwash/${fileName}`, file);
+                                 if (data) {
+                                   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(`carwash/${fileName}`);
+                                   setCarwashForm(prev => ({ ...prev, after: publicUrl }));
+                                 }
+                               }} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                         type="submit"
+                         disabled={uploadingCarwash} 
+                         className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs tracking-[0.2em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                      >
+                         {uploadingCarwash ? 'Publishing...' : 'Publish Transformation'}
+                      </button>
+                   </form>
+                </div>
+
+                <div className="bg-white border border-black/5 p-12 rounded-[56px] relative overflow-hidden shadow-sm">
+                   <div className="flex items-center justify-between mb-12">
+                     <h4 className="text-sm font-black tracking-[0.2em] text-black/40">Recent Magic</h4>
+                     {carwashLoading && <div className="h-4 w-4 border-2 border-black/20 border-t-brand-blue rounded-full animate-spin" />}
+                   </div>
+                   
+                   <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
+                      {carwashItems.length === 0 && !carwashLoading && (
+                        <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No transformations yet</div>
+                      )}
+                      {carwashItems.map(item => (
+                        <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] space-y-6 group hover:bg-black/10 transition-all">
+                           <div className="flex items-center justify-between">
+                              <p className="text-sm font-black text-[#1D1D1F]">{item.car_model}</p>
+                              <button 
+                                onClick={async () => {
+                                  await supabase.from('carwash_showcase').delete().eq('id', item.id);
+                                  fetchCarwashItems();
+                                  toast.success('Deleted');
+                                }}
+                                className="h-8 w-8 rounded-lg bg-white text-red-500 border border-black/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <div className="relative group/img">
+                                <img src={item.before_url} className="h-32 w-full object-cover rounded-2xl border border-black/5" alt="Before" />
+                                <span className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[8px] font-bold text-white uppercase tracking-widest">Before</span>
+                              </div>
+                              <div className="relative group/img">
+                                <img src={item.after_url} className="h-32 w-full object-cover rounded-2xl border border-brand-blue/20" alt="After" />
+                                <span className="absolute bottom-2 left-2 px-2 py-1 bg-brand-blue/80 backdrop-blur-md rounded-md text-[8px] font-bold text-white uppercase tracking-widest">After</span>
+                              </div>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              </motion.div>
+            )}
+            
             {activeTab === 'promotions' && (
               <motion.div initial={{opacity:0, y: 20}} animate={{opacity:1, y: 0}} exit={{opacity:0}} className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 <div className="bg-white border border-black/5 p-12 rounded-[56px] space-y-12 shadow-sm">
                    <div>
-                      <h3 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Manage <br/><span className="text-brand-blue">Promotions.</span></h3>
-                      <p className="text-black/40 font-bold uppercase text-[10px] tracking-[0.3em]">Sector: Marketing Campaigns</p>
+                      <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4 text-[#1D1D1F]">Manage <span className="text-brand-blue ml-2">Promotions</span></h3>
+                      <p className="text-black/40 font-bold text-[10px] tracking-[0.2em]">Sector: Marketing campaigns</p>
                    </div>
                    
                    <form onSubmit={handleAddPromotion} className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Campaign Title</label>
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Campaign title</label>
                         <input 
                           type="text" 
                           value={promoForm.title}
@@ -740,7 +909,7 @@ export default function AdminDashboard() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Offer Text</label>
+                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Offer text</label>
                           <input 
                             type="text" 
                             value={promoForm.offer}
@@ -750,7 +919,7 @@ export default function AdminDashboard() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Service Tag</label>
+                          <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Service tag</label>
                           <select 
                             value={promoForm.tag}
                             onChange={(e) => setPromoForm({...promoForm, tag: e.target.value})}
@@ -764,7 +933,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Campaign Description</label>
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Campaign description</label>
                         <textarea 
                           rows={3}
                           value={promoForm.desc}
@@ -775,7 +944,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 ml-4">Poster Image URL</label>
+                        <label className="text-[10px] font-black tracking-[0.2em] text-black/40 ml-4">Poster image url</label>
                         <input 
                           type="url" 
                           value={promoForm.img}
@@ -788,7 +957,7 @@ export default function AdminDashboard() {
                       <button 
                          type="submit"
                          disabled={uploadingPromo} 
-                         className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                         className="flex items-center justify-center gap-3 w-full py-6 rounded-[28px] bg-brand-blue text-white font-black text-xs tracking-[0.2em] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                       >
                          {uploadingPromo ? (
                             <>
@@ -805,13 +974,13 @@ export default function AdminDashboard() {
 
                 <div className="bg-white border border-black/5 p-12 rounded-[56px] relative overflow-hidden shadow-sm">
                    <div className="flex items-center justify-between mb-12">
-                     <h4 className="text-sm font-black uppercase tracking-[0.3em] text-black/40">Active Campaigns</h4>
+                     <h4 className="text-sm font-black tracking-[0.2em] text-black/40">Active campaigns</h4>
                      {promotionsLoading && <div className="h-4 w-4 border-2 border-black/20 border-t-brand-blue rounded-full animate-spin" />}
                    </div>
                    
                    <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
                       {promotions.length === 0 && !promotionsLoading && (
-                        <div className="text-center py-20 text-black/30 font-bold uppercase tracking-widest text-xs">No active promotions</div>
+                        <div className="text-center py-20 text-black/30 font-bold tracking-widest text-xs">No active promotions</div>
                       )}
                       {promotions.map(item => (
                         <div key={item.id} className="bg-black/5 border border-transparent p-6 rounded-[32px] flex flex-col xl:flex-row items-center gap-8 group hover:bg-black/10 transition-all">
@@ -821,7 +990,7 @@ export default function AdminDashboard() {
                            <div className="min-w-0 pr-4 flex-1">
                               <p className="text-sm font-black mb-1 truncate text-[#1D1D1F]">{item.title}</p>
                               <p className="text-xs font-bold text-brand-blue mb-1 truncate">{item.offer}</p>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-4">{item.tag}</p>
+                              <p className="text-[10px] font-black tracking-widest text-black/40 mb-4">{item.tag}</p>
                               <div className="flex gap-4">
                                 <button onClick={() => handleDeletePromotion(item.id)} className="h-10 w-10 rounded-xl bg-white text-red-500 border border-black/5 shadow-sm flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                               </div>
@@ -838,29 +1007,55 @@ export default function AdminDashboard() {
                 <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-brand-blue/10 blur-[100px] rounded-full" />
                 <div className="relative z-10 space-y-16">
                    <div className="space-y-4">
-                      <h3 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter text-[#1D1D1F]">Site <br/>Settings.</h3>
+                      <h3 className="text-2xl md:text-3xl font-black leading-tight tracking-tighter text-[#1D1D1F]">Site <span className="text-brand-blue ml-2">Settings</span></h3>
                       <p className="text-lg text-black/50 font-medium max-w-md">Configure global variables and external connections for the Junction landing page.</p>
                    </div>
                    
-                   <div className="space-y-10 group">
+                    <div className="space-y-10 group">
                       <div className="space-y-4">
-                         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-black/50 ml-2">Hero Image (URL)</label>
-                         <div className="relative">
-                            <ImageIcon size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-blue" />
-                            <input 
-                              type="text" 
-                              value={heroBg}
-                              onChange={(e) => setHeroBg(e.target.value)}
-                              placeholder="Enter an image URL..."
-                              className="w-full pl-16 pr-8 py-6 bg-black/5 border border-black/10 rounded-[32px] outline-none focus:bg-white focus:ring-4 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] placeholder:text-black/30"
-                            />
+                         <label className="text-xs font-bold text-black/40 ml-2">Hero background image</label>
+                         
+                         {heroBg && (
+                           <div className="relative w-full h-48 rounded-[32px] overflow-hidden border border-black/10 mb-4 group/img">
+                             <img src={heroBg} alt="Hero Background" className="w-full h-full object-cover" />
+                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center gap-4">
+                               <button 
+                                 onClick={() => setHeroBg('')}
+                                 className="h-12 w-12 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all"
+                                 title="Delete Background"
+                               >
+                                 <Trash2 size={20} />
+                               </button>
+                             </div>
+                           </div>
+                         )}
+
+                         <div className="flex flex-col sm:flex-row gap-4">
+                           <div className="relative flex-grow">
+                              <ImageIcon size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-blue" />
+                              <input 
+                                type="text" 
+                                value={heroBg}
+                                onChange={(e) => setHeroBg(e.target.value)}
+                                placeholder="Enter an image URL..."
+                                className="w-full pl-16 pr-8 py-5 bg-black/5 border border-black/10 rounded-[28px] outline-none focus:bg-white focus:ring-4 focus:ring-brand-blue/20 transition-all font-bold text-[#1D1D1F] placeholder:text-black/30 text-sm"
+                              />
+                           </div>
+                           <label className={cn(
+                             "flex items-center justify-center gap-2 px-8 py-5 rounded-[28px] bg-white border border-black/10 font-bold text-sm cursor-pointer hover:bg-black/5 transition-all shadow-sm",
+                             uploadingBg && "opacity-50 pointer-events-none"
+                           )}>
+                              {uploadingBg ? <RefreshCw size={18} className="animate-spin text-brand-blue" /> : <Camera size={18} className="text-brand-blue" />}
+                              <span>{uploadingBg ? 'Uploading...' : 'Upload Image'}</span>
+                              <input type="file" className="hidden" accept="image/*" onChange={handleUploadBg} disabled={uploadingBg} />
+                           </label>
                          </div>
                       </div>
 
                       <button 
                         onClick={saveSettings}
                         disabled={saveLoading}
-                        className="flex items-center gap-4 px-14 py-6 rounded-full bg-brand-blue text-white font-black text-xs uppercase tracking-[0.4em] shadow-2xl shadow-brand-blue/40 hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-50"
+                        className="flex items-center gap-4 px-14 py-6 rounded-full bg-brand-blue text-white font-black text-xs tracking-[0.3em] shadow-2xl shadow-brand-blue/40 hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-50"
                       >
                          {saveLoading ? (
                            <>
@@ -873,11 +1068,11 @@ export default function AdminDashboard() {
                          ) : (
                            <>
                               <Save size={20} />
-                              Save Changes
+                              Save Luxury Settings
                            </>
                          )}
                       </button>
-                   </div>
+                    </div>
                 </div>
               </motion.div>
             )}
@@ -888,8 +1083,8 @@ export default function AdminDashboard() {
                     <Layers size={96} className="text-brand-blue/30" />
                     <div className="absolute inset-0 rounded-full border border-brand-blue/20 animate-ping" />
                  </div>
-                 <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-8 italic text-[#1D1D1F]">Coming Soon</h2>
-                 <p className="text-black/40 font-bold max-w-sm mx-auto uppercase text-[10px] tracking-[0.3em] leading-loose">
+                 <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-8 italic text-[#1D1D1F]">Coming Soon</h2>
+                 <p className="text-black/40 font-bold max-w-sm mx-auto text-[10px] tracking-[0.2em] leading-loose">
                    This module is actively being developed. Check back soon for new administrative features.
                  </p>
               </motion.div>

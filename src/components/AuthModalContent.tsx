@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Facebook, Chrome, Eye, EyeOff, User, Lock, Mail, MapPin, RefreshCw } from 'lucide-react';
+import { LogIn, UserPlus, Facebook, Chrome, Eye, EyeOff, User, Lock, Mail, MapPin, RefreshCw, Phone, Camera } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import { toast } from 'react-toastify';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -10,17 +11,38 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ onClose }: AuthModalProps) {
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validatePassword = (pass: string) => {
+  const getPasswordStrength = (pass: string) => {
+    if (pass.length === 0) return { label: '', color: '' };
+    if (pass.length < 8) return { label: 'Too Short', color: 'text-red-500' };
+    
+    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
+    const mediumRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/;
+    
+    if (strongRegex.test(pass)) return { label: 'Strong', color: 'text-green-500' };
+    if (mediumRegex.test(pass)) return { label: 'Medium', color: 'text-yellow-500' };
+    return { label: 'Weak', color: 'text-orange-500' };
+  };
+
+  const validatePassword = (pass: string, userEmail: string) => {
     if (pass.length < 8) return 'Password must be at least 8 characters long';
+    
+    // Admin specific rule
+    if (userEmail === 'junctioncyber23@gmail.com' && pass !== 'Sentinel@2026') {
+      return 'Invalid password for Admin account';
+    }
     return null;
   };
 
@@ -29,12 +51,27 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     setLoading(true);
     setError(null);
     
-    // Simple validation for the requested admin password "123@junction"
-    const passError = validatePassword(password);
-    if (!isLogin && passError) {
+    // Enhanced validation for registration and admin login
+    const passError = validatePassword(password, email);
+    if (passError) {
       setError(passError);
       setLoading(false);
       return;
+    }
+
+    if (!isLogin) {
+      if (!fullName || !phone || !location) {
+        setError('Please fill in all registration fields.');
+        setLoading(false);
+        return;
+      }
+      
+      const phoneRegex = /^(\+254|0)[17]\d{8}$/;
+      if (!phoneRegex.test(phone)) {
+        setError('Please enter a valid phone number.');
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -58,7 +95,9 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           const { error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
+            phone: phone,
             address: location,
+            avatar_url: avatarUrl,
             updated_at: new Date().toISOString(),
           });
           if (profileError) console.error('Profile creation error:', profileError);
@@ -87,6 +126,35 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     }
   };
 
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!event.target.files || event.target.files.length === 0) return;
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `temp/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success('Image uploaded!');
+    } catch (error: any) {
+      toast.error('Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex gap-4 p-1 glass-card border-black/5 bg-black/5 rounded-2xl mb-8">
@@ -94,13 +162,13 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           onClick={() => { setIsLogin(true); setError(null); }}
           className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${isLogin ? 'bg-white text-brand-blue shadow-md' : 'text-black/40'}`}
         >
-          Sign In
+          {t('sign_in')}
         </button>
         <button 
           onClick={() => { setIsLogin(false); setError(null); }}
           className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${!isLogin ? 'bg-white text-brand-blue shadow-md' : 'text-black/40'}`}
         >
-          Register
+          {t('register')}
         </button>
       </div>
 
@@ -116,13 +184,35 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
       <form onSubmit={handleAuth} className="space-y-4">
         {!isLogin && (
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="relative group">
+              <div className="h-20 w-20 rounded-full bg-black/5 overflow-hidden ring-4 ring-brand-blue/10 flex items-center justify-center">
+                {uploading ? (
+                  <RefreshCw className="animate-spin text-brand-blue" />
+                ) : (
+                  <img 
+                    src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || 'temp'}`} 
+                    alt="Avatar" 
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+              <label className="absolute bottom-0 right-0 p-1.5 bg-brand-blue text-white rounded-full shadow-lg cursor-pointer hover:bg-brand-blue/90">
+                <Camera size={14} />
+                <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={uploading} />
+              </label>
+            </div>
+            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest">Upload Profile Photo</p>
+          </div>
+        )}
+        {!isLogin && (
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-black/40 ml-2">Full Name</label>
+            <label className="text-xs font-bold text-black/40 ml-2">{t('full_name')}</label>
             <div className="relative">
               <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
               <input 
                 type="text" 
-                placeholder="e.g. Juction Admin"
+                placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required={!isLogin}
@@ -133,12 +223,28 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         )}
         {!isLogin && (
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-black/40 ml-2">Location / City</label>
+            <label className="text-xs font-bold text-black/40 ml-2">{t('prof_phone')}</label>
+            <div className="relative">
+              <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
+              <input 
+                type="tel" 
+                placeholder="0712 345 678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required={!isLogin}
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border-transparent bg-black/5 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" 
+              />
+            </div>
+          </div>
+        )}
+        {!isLogin && (
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-black/40 ml-2">{t('location')}</label>
             <div className="relative">
               <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
               <input 
                 type="text" 
-                placeholder="e.g. Karen, Nairobi"
+                placeholder="Nairobi, Kenya"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required={!isLogin}
@@ -148,12 +254,12 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           </div>
         )}
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-black/40 ml-2">Email Address</label>
+          <label className="text-xs font-bold text-black/40 ml-2">{t('email_addr')}</label>
           <div className="relative">
             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
             <input 
               type="email" 
-              placeholder="admin@junction.com"
+              placeholder="john@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required 
@@ -162,7 +268,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-black/40 ml-2">Password</label>
+          <label className="text-xs font-bold text-black/40 ml-2">{t('password')}</label>
           <div className="relative">
             <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" />
             <input 
@@ -181,6 +287,14 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {password.length > 0 && (
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-black/30">Strength</span>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${getPasswordStrength(password).color}`}>
+                {getPasswordStrength(password).label}
+              </span>
+            </div>
+          )}
         </div>
 
         <button 
@@ -195,7 +309,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           ) : (
             <div className="flex items-center gap-2">
               {isLogin ? <LogIn size={20} /> : <UserPlus size={20} />}
-              <span>{isLogin ? 'Log In' : 'Register'}</span>
+              <span>{isLogin ? t('log_in') : t('register')}</span>
             </div>
           )}
         </button>
@@ -203,7 +317,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
       <div className="relative py-4">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/5"></div></div>
-        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-black/30">Or continue with</span></div>
+        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-black/30">{t('or_continue_with')}</span></div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

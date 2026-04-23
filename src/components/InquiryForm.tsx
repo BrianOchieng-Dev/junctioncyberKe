@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
 import { Send, MessageSquare, Mail, User } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 
 export default function InquiryForm() {
+  const { t } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -43,13 +45,13 @@ export default function InquiryForm() {
   };
 
   return (
-    <section className="py-24 px-4 bg-black/[0.02]" id="contact">
+    <section className="py-12 px-4 bg-black/[0.02]" id="contact">
       <div className="max-w-7xl mx-auto">
         <div className="glass-card overflow-hidden border-white/60 shadow-2xl flex flex-col lg:flex-row">
           {/* Left Info Panel */}
-          <div className="w-full lg:w-1/3 bg-brand-blue p-12 text-white flex flex-col justify-between">
+          <div className="w-full lg:w-1/3 bg-brand-blue p-6 text-white flex flex-col justify-between">
             <div>
-              <h2 className="text-3xl font-bold mb-6">Connect with <br/>Executive Care.</h2>
+              <h2 className="text-3xl font-bold mb-6">{t('contact_title').split(' ').slice(0, 2).join(' ')} <br/>{t('contact_title').split(' ').slice(2).join(' ')}</h2>
               <p className="text-white/70 mb-8">
                 Have a specific requirement? Our concierge team is ready to assist you with bespoke service packages.
               </p>
@@ -98,7 +100,7 @@ export default function InquiryForm() {
           </div>
 
           {/* Right Form Panel */}
-          <div className="w-full lg:w-2/3 p-12 bg-white/80 backdrop-blur-xl">
+          <div className="w-full lg:w-2/3 p-6 bg-white/80 backdrop-blur-xl">
             {submitted ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -115,7 +117,7 @@ export default function InquiryForm() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-black/40 ml-2">Full Name</label>
+                    <label className="text-xs font-bold text-black/40 ml-2">{t('full_name')}</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" size={18} />
                       <input 
@@ -129,7 +131,7 @@ export default function InquiryForm() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-black/40 ml-2">Email Address</label>
+                    <label className="text-xs font-bold text-black/40 ml-2">{t('email_addr')}</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20" size={18} />
                       <input 
@@ -145,7 +147,7 @@ export default function InquiryForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-black/40 ml-2">Service of Interest</label>
+                  <label className="text-xs font-bold text-black/40 ml-2">{t('service_interest')}</label>
                   <select 
                     value={formData.service}
                     onChange={(e) => setFormData({ ...formData, service: e.target.value })}
@@ -160,7 +162,7 @@ export default function InquiryForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-black/40 ml-2">Detailed Message</label>
+                  <label className="text-xs font-bold text-black/40 ml-2">{t('detailed_msg')}</label>
                   <textarea 
                     rows={4} 
                     required 
@@ -182,11 +184,11 @@ export default function InquiryForm() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Processing...
+                        {t('processing')}
                      </>
                    ) : (
                      <>
-                        Send Inquiry <Send size={20} />
+                        {t('send_inquiry')} <Send size={20} />
                      </>
                    )}
                 </button>

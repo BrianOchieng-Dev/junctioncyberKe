@@ -15,9 +15,9 @@ export default function ServicesSummary() {
   const { t } = useLanguage();
 
   return (
-    <section className="py-24 px-4 bg-white/50">
+    <section className="py-12 px-4 bg-white/50">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+        <div className="flex flex-col md:flex-row items-end justify-between mb-6 gap-6">
           <div className="max-w-2xl">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-[#1D1D1F]">
               Explore Our <span className="text-black/40">Services</span>
