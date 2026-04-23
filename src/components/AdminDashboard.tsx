@@ -293,7 +293,11 @@ export default function AdminDashboard() {
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path);
       setHeroBg(publicUrl);
-      toast.success('Uploaded!');
+      
+      // Auto-save to persist immediately
+      await supabase.from('site_settings').upsert({ key: 'hero_bg', value: publicUrl }, { onConflict: 'key' });
+      
+      toast.success('Environment Synchronized!');
     } catch (error: any) {
       toast.error('Upload failed: ' + error.message);
     } finally {

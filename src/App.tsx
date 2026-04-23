@@ -57,7 +57,7 @@ interface LayoutProps {
 }
 
 function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
   const [formLoading, setFormLoading] = useState(false);
@@ -192,11 +192,11 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
           <form className="space-y-4" onSubmit={handleFormSubmit}>
             <div className="space-y-2">
               <label className="text-xs font-bold text-black/40 ml-2">Full Name</label>
-              <input type="text" name="name" required placeholder="John Doe" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
+              <input type="text" name="name" required defaultValue={profile?.full_name || user?.email?.split('@')[0] || ''} placeholder="John Doe" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-black/40 ml-2">Email Address</label>
-              <input type="email" name="email" required placeholder="john@example.com" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
+              <input type="email" name="email" required defaultValue={user?.email || ''} placeholder="john@example.com" className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium" />
             </div>
             {modalType === 'book' && (
               <>
