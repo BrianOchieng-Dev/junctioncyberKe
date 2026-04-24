@@ -1,15 +1,32 @@
+import { motion, useScroll, useSpring } from 'motion/react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect, ReactNode, lazy, Suspense } from 'react';
+import { Ticket as TicketIcon, Download, X } from 'lucide-react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import Hero from './components/Hero';
 import Navbar from './components/Navbar';
-import Services from './components/Services';
-import About from './components/About';
-import FAQ from './components/FAQ';
-import Testimonials from './components/Testimonials';
-import Team from './components/Team';
+import Modal from './components/Modal';
+import LoadingSpinner from './components/LoadingSpinner';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
-import AdminDashboard from './components/AdminDashboard';
-import Modal from './components/Modal';
-import ServiceGallery from './components/ServiceGallery';
+
+// Lazy loaded components for optimized bundle size
+const Services = lazy(() => import('./components/Services'));
+const About = lazy(() => import('./components/About'));
+const FAQ = lazy(() => import('./components/FAQ'));
+const Testimonials = lazy(() => import('./components/Testimonials'));
+const Team = lazy(() => import('./components/Team'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const ServiceGallery = lazy(() => import('./components/ServiceGallery'));
+const Community = lazy(() => import('./components/Community'));
+const ServicesSummary = lazy(() => import('./components/ServicesSummary'));
+const AboutSummary = lazy(() => import('./components/AboutSummary'));
+const InquiryForm = lazy(() => import('./components/InquiryForm'));
+const PromotionsPoster = lazy(() => import('./components/PromotionsPoster'));
+const CarwashShowcase = lazy(() => import('./components/CarwashShowcase'));
+const ProfileSettings = lazy(() => import('./components/ProfileSettings'));
 import { motion, useScroll, useSpring } from 'motion/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, ReactNode } from 'react';
@@ -21,14 +38,6 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { InquiryProvider } from './context/InquiryContext';
 import { supabase } from './lib/supabase';
 import AuthModalContent from './components/AuthModalContent';
-import Community from './components/Community';
-import ServicesSummary from './components/ServicesSummary';
-import AboutSummary from './components/AboutSummary';
-import InquiryForm from './components/InquiryForm';
-import PromotionsPoster from './components/PromotionsPoster';
-import CarwashShowcase from './components/CarwashShowcase';
-import ProfileSettings from './components/ProfileSettings';
-import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthGate from './components/AuthGate';
 import { NotificationProvider } from './context/NotificationContext';
@@ -149,7 +158,8 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
       <div className="relative pt-10">{children}</div>
       <WhatsAppButton />
       <Modal isOpen={modalType !== null} onClose={() => setModalType(null)} title={modalType === 'quote' ? t('request_quote') : modalType === 'book' ? t('book_now') : modalType === 'ticket' ? 'Your Secure Ticket' : modalType === 'profile' ? 'Profile Customization' : 'Community Access'}>
-        {modalType === 'auth' ? <AuthModalContent onClose={() => setModalType(null)} /> : modalType === 'profile' ? <ProfileSettings user={user} onClose={() => setModalType(null)} /> : modalType === 'ticket' ? (
+        <Suspense fallback={<LoadingSpinner />}>
+          {modalType === 'auth' ? <AuthModalContent onClose={() => setModalType(null)} /> : modalType === 'profile' ? <ProfileSettings user={user} onClose={() => setModalType(null)} /> : modalType === 'ticket' ? (
           /* ... existing ticket code ... */
           <div className="p-8 space-y-6">
             <div className="glass-card bg-brand-blue/5 border-dashed border-2 border-brand-blue/20 p-8 rounded-[40px] relative overflow-hidden">
@@ -294,6 +304,7 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
             </button>
           </form>
         )}
+        </Suspense>
       </Modal>
     </>
   );
@@ -332,83 +343,85 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
   return (
     <Router>
       <main className="mesh-gradient min-h-screen selection:bg-brand-blue/10">
-        <Routes>
-          <Route path="/" element={
-            <Layout 
-              modalType={modalType} 
-              setModalType={setModalType} 
-              t={t} 
-              onOpenProfile={() => setModalType('profile')}
-            >
-              <Hero 
-                onOpenQuote={() => setModalType('quote')} 
-                isAuthenticated={!!user}
-              />
-              <PromotionsPoster />
-              <ServicesSummary />
-              <CarwashShowcase />
-              <AboutSummary />
-              <Community isAuthenticated={!!user} onJoin={() => setModalType('auth')} />
-              <Testimonials />
-              <InquiryForm />
-              <FAQ />
-              <Footer />
-            </Layout>
-          } />
-          <Route path="/services" element={
-            <Layout 
-              modalType={modalType} 
-              setModalType={setModalType} 
-              t={t} 
-              onOpenProfile={() => setModalType('profile')}
-            >
-              <Services onBook={() => setModalType('book')} onGetTicket={() => setModalType('ticket')} />
-              <InquiryForm />
-              <Footer />
-            </Layout>
-          } />
-          <Route path="/gallery" element={
-            <Layout 
-              modalType={modalType} 
-              setModalType={setModalType} 
-              t={t} 
-              onOpenProfile={() => setModalType('profile')}
-            >
-              <ServiceGallery />
-              <InquiryForm />
-              <Footer />
-            </Layout>
-          } />
-          <Route path="/about" element={
-            <Layout 
-              modalType={modalType} 
-              setModalType={setModalType} 
-              t={t} 
-              onOpenProfile={() => setModalType('profile')}
-            >
-              <About />
-              <Team />
-              <InquiryForm />
-              <Footer />
-            </Layout>
-          } />
-          <Route path="/admin" element={
-            <AuthGate requireAdmin>
-              <AdminDashboard />
-            </AuthGate>
-          } />
-          <Route path="*" element={
-            <Layout 
-              modalType={modalType} 
-              setModalType={setModalType} 
-              t={t} 
-              onOpenProfile={() => setModalType('profile')}
-            >
-              <NotFound />
-              <Footer />
-            </Layout>
-          } />
-        </Routes>
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+          <Routes>
+            <Route path="/" element={
+              <Layout 
+                modalType={modalType} 
+                setModalType={setModalType} 
+                t={t} 
+                onOpenProfile={() => setModalType('profile')}
+              >
+                <Hero 
+                  onOpenQuote={() => setModalType('quote')} 
+                  isAuthenticated={!!user}
+                />
+                <PromotionsPoster />
+                <ServicesSummary />
+                <CarwashShowcase />
+                <AboutSummary />
+                <Community isAuthenticated={!!user} onJoin={() => setModalType('auth')} />
+                <Testimonials />
+                <InquiryForm />
+                <FAQ />
+                <Footer />
+              </Layout>
+            } />
+            <Route path="/services" element={
+              <Layout 
+                modalType={modalType} 
+                setModalType={setModalType} 
+                t={t} 
+                onOpenProfile={() => setModalType('profile')}
+              >
+                <Services onBook={() => setModalType('book')} onGetTicket={() => setModalType('ticket')} />
+                <InquiryForm />
+                <Footer />
+              </Layout>
+            } />
+            <Route path="/gallery" element={
+              <Layout 
+                modalType={modalType} 
+                setModalType={setModalType} 
+                t={t} 
+                onOpenProfile={() => setModalType('profile')}
+              >
+                <ServiceGallery />
+                <InquiryForm />
+                <Footer />
+              </Layout>
+            } />
+            <Route path="/about" element={
+              <Layout 
+                modalType={modalType} 
+                setModalType={setModalType} 
+                t={t} 
+                onOpenProfile={() => setModalType('profile')}
+              >
+                <About />
+                <Team />
+                <InquiryForm />
+                <Footer />
+              </Layout>
+            } />
+            <Route path="/admin" element={
+              <AuthGate requireAdmin>
+                <AdminDashboard />
+              </AuthGate>
+            } />
+            <Route path="*" element={
+              <Layout 
+                modalType={modalType} 
+                setModalType={setModalType} 
+                t={t} 
+                onOpenProfile={() => setModalType('profile')}
+              >
+                <NotFound />
+                <Footer />
+              </Layout>
+            } />
+          </Routes>
+        </Suspense>
       </main>
     </Router>
   );

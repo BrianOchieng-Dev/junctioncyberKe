@@ -64,11 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Listen for profile changes in real-time
+  // Listen for profile changes and track presence in real-time
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    // Track profile changes
+    const profileChannel = supabase
       .channel(`profile_${user.id}`)
       .on(
         'postgres_changes',
@@ -79,8 +80,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       .subscribe();
 
+    // Track presence
+    const presenceChannel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: user.id,
+        },
+      },
+    });
+
+    presenceChannel
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: user.id,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
+      supabase.removeChannel(presenceChannel);
     };
   }, [user]);
 

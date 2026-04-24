@@ -83,6 +83,7 @@ export default function AdminDashboard() {
   // Promotions State
   const [promotions, setPromotions] = useState<any[]>([]);
   const [promotionsLoading, setPromotionsLoading] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [promoForm, setPromoForm] = useState({
     title: '',
     offer: '',
@@ -104,6 +105,7 @@ export default function AdminDashboard() {
   const [uploadingEvent, setUploadingEvent] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [stats, setStats] = useState({ totalCustomers: 0, onlineNow: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -138,8 +140,20 @@ export default function AdminDashboard() {
       )
       .subscribe();
 
+    const presenceChannel = supabase.channel('online-users');
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const newState = presenceChannel.presenceState();
+        const onlineIds = new Set(Object.keys(newState));
+        setOnlineUserIds(onlineIds);
+        setStats(prev => ({ ...prev, onlineNow: onlineIds.size }));
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
     };
   }, []);
 
@@ -963,7 +977,15 @@ export default function AdminDashboard() {
                           <img src={acc.avatar_url || "https://i.pravatar.cc/100"} className="w-full h-full object-cover" alt="Profile" />
                         </div>
                         <div className="min-w-0 flex-grow">
-                          <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous'}</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous'}</p>
+                            {onlineUserIds.has(acc.id) && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                                Online
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest truncate">{acc.email}</p>
                           <p className="text-[8px] font-bold text-black/30 mt-1 uppercase tracking-tighter italic">ID: {acc.id.slice(0, 8)}...</p>
                         </div>
