@@ -102,7 +102,7 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
   }, []);
 
   return (
-    <section ref={containerRef} className="relative flex min-h-screen flex-col justify-center px-6 md:px-16 pt-20 text-left overflow-hidden">
+    <section ref={containerRef} style={{ position: 'relative' }} className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-10 text-center overflow-hidden">
       {/* Dynamic Mesh Animation */}
       <div className="absolute inset-0 -z-30">
         <motion.div 
@@ -113,16 +113,26 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
             y: [0, 30, 0],
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-brand-blue/10 via-purple-500/10 to-transparent blur-[120px]"
+          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-brand-blue/5 via-purple-500/5 to-transparent blur-[120px]"
+        />
+        <motion.div 
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [90, 0, 90],
+            x: [50, 0, 50],
+            y: [30, 0, 30],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-0 right-0 w-full h-full bg-gradient-to-tl from-indigo-500/5 via-brand-blue/5 to-transparent blur-[120px]"
         />
       </div>
 
       {/* Background Carousel with Parallax */}
-      <motion.div style={{ y: bgY, opacity: bgOpacity }} className="absolute inset-0 -z-20 bg-[#0a0a0a]">
+      <motion.div style={{ y: bgY, opacity: bgOpacity }} className="absolute inset-0 -z-20">
         <AnimatePresence mode="wait">
           <motion.div
             key={customBg ? 'custom' : currentImg}
-            initial={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1.5, ease: "easeInOut" }}
@@ -131,75 +141,79 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
             <img 
               src={customBg || homeImages[currentImg]} 
               className={cn(
-                "h-full w-full object-cover scale-105 transition-all duration-1000",
-                customBg ? "opacity-100" : "opacity-80"
+                "h-full w-full object-cover scale-110 transition-all duration-1000",
+                customBg ? "opacity-100" : "opacity-90"
               )} 
               alt="Hero Background" 
               referrerPolicy="no-referrer"
             />
           </motion.div>
         </AnimatePresence>
-        
-        {/* Dark Overlays for Premium Real Estate Aesthetics */}
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {/* Subtle Overlays for Better Image Visibility */}
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#fbfbfd]/40 via-transparent to-[#fbfbfd]/80" />
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
       </motion.div>
 
-      {/* Main Content Area */}
-      <div className="w-full max-w-7xl mx-auto pb-32">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, x: -20 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          style={{ y: textY, opacity: textOpacity }}
-          className="z-10 max-w-3xl"
-        >
-          <span className="mb-4 inline-block px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-black tracking-[0.3em] uppercase text-white backdrop-blur-md shadow-lg">
-            {t('hero_tag')}
-          </span>
-          <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter text-white leading-[1.1] text-glow">
-            {t('hero_title_1')} <br />
-            <span className="text-brand-blue">
-              {t('hero_title_2')}
-            </span>
-          </h1>
-          <p className="mt-8 max-w-xl text-lg md:text-xl font-medium text-white/90 leading-relaxed drop-shadow-md">
-            {t('hero_desc')}
-          </p>
+      {/* Background Refraction Circle */}
+      <div className="absolute top-1/2 left-1/2 -z-10 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-blue/10 blur-[150px]" />
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <button onClick={onOpenQuote} className="flex items-center justify-center gap-2 rounded-full bg-brand-blue px-8 py-4 font-bold text-white shadow-[0_0_20px_rgba(0,122,255,0.4)] transition-all hover:bg-brand-blue/90 hover:scale-105 active:scale-95 text-sm uppercase tracking-widest">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        style={{ y: textY, opacity: textOpacity }}
+        className="z-10"
+      >
+        <span className="mb-2 inline-block rounded-full border border-black/5 bg-black/5 px-4 py-1 text-[10px] md:text-xs font-semibold tracking-widest uppercase text-black/40 backdrop-blur-md">
+          {t('hero_tag')}
+        </span>
+        <h1 className="max-w-4xl text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-[#1D1D1F] lg:leading-[1.1] px-2">
+          {t('hero_title_1')} <br />
+          <span className="bg-gradient-to-r from-brand-blue to-purple-600 bg-clip-text text-transparent text-glow">
+            {t('hero_title_2')}
+          </span>
+        </h1>
+        <p className="mx-auto mt-6 md:mt-8 max-w-2xl text-base md:text-lg lg:text-xl text-[#1D1D1F]/60 px-4">
+          {t('hero_desc')}
+        </p>
+
+        <div className="mt-4 md:mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row px-4">
+          <button className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-[#1D1D1F] px-8 py-4 font-bold text-white transition-all hover:bg-brand-blue group">
+            {t('explore_btn')}
+            <ChevronRight className="transition-transform group-hover:translate-x-1" size={20} />
+          </button>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
+            <button 
+              onClick={onOpenQuote}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full border border-black/10 bg-black/5 px-6 py-4 font-bold text-[#1D1D1F] backdrop-blur-md transition-all hover:bg-black/10 text-sm whitespace-nowrap"
+            >
               <FileText size={18} /> {t('request_quote')}
             </button>
-            <button className="flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40 text-sm uppercase tracking-widest">
-              {t('explore_btn')} <ChevronRight size={18} />
-            </button>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
-      {/* Liquid Glass Bottom Pill - Floating Stats */}
-      <div className="absolute -bottom-12 md:-bottom-16 left-0 right-0 px-4 z-20 flex justify-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="w-full max-w-5xl bg-white/5 backdrop-blur-3xl border border-white/20 rounded-[40px] md:rounded-[40px] lg:rounded-full p-6 md:px-12 md:py-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12"
-        >
-          {[
-            { label: 'Happy Clients', value: '15k+' },
-            { label: 'Cyber Speed', value: '1Gbps' },
-            { label: 'Awards Win', value: '24' },
-            { label: 'Years Experience', value: '12' },
-          ].map((stat, i) => (
-            <div key={stat.label} className="flex flex-col items-center md:items-start text-center md:text-left w-full md:w-auto relative">
-               <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">{stat.label}</span>
-               <span className="text-3xl font-black tracking-tighter text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">{stat.value}</span>
-               {i !== 3 && <div className="hidden md:block absolute right-[-2.5rem] top-1/2 -translate-y-1/2 w-[1px] h-10 bg-white/20" />}
-            </div>
-          ))}
-        </motion.div>
+      {/* Floating Glass Stats */}
+      <div className="mt-8 md:mt-12 grid w-full max-w-5xl grid-cols-2 gap-3 md:gap-4 md:grid-cols-4 px-4 z-10">
+        {[
+          { label: 'Happy Clients', value: '15k+' },
+          { label: 'Cyber Speed', value: '1Gbps' },
+          { label: 'Awards Win', value: '24' },
+          { label: 'Years Experience', value: '12' },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.1 }}
+            className="glass-card flex flex-col items-center justify-center p-6 text-center border-white/60 shadow-lg"
+          >
+            <span className="text-2xl font-bold text-brand-blue">{stat.value}</span>
+            <span className="text-xs font-bold text-[#1D1D1F]/40">{stat.label}</span>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

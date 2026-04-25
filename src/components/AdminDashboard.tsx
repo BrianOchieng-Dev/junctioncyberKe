@@ -129,19 +129,20 @@ export default function AdminDashboard() {
     fetchEvents();
     fetchBookings();
 
-    const channel = supabase
-      .channel('admin_inquiries')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'inquiries' },
-        (payload) => {
-          setInquiries(prev => [payload.new as Inquiry, ...prev]);
-        }
-      )
-      .subscribe();
+    // Real-time listeners for all key tables
+    const channels = [
+      supabase.channel('public:inquiries').on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, fetchInquiries),
+      supabase.channel('public:business_events').on('postgres_changes', { event: '*', schema: 'public', table: 'business_events' }, fetchEvents),
+      supabase.channel('public:carwash_showcase').on('postgres_changes', { event: '*', schema: 'public', table: 'carwash_showcase' }, fetchCarwashItems),
+      supabase.channel('public:profiles').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAccounts),
+      supabase.channel('public:gallery').on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, fetchGalleryItems),
+      supabase.channel('public:team_members').on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, fetchTeamMembers),
+      supabase.channel('public:site_settings').on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, fetchSettings)
+    ];
+
+    channels.forEach(channel => channel.subscribe());
 
     const presenceChannel = supabase.channel('online-users');
-
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const newState = presenceChannel.presenceState();
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach(channel => supabase.removeChannel(channel));
       supabase.removeChannel(presenceChannel);
     };
   }, []);
@@ -402,7 +403,12 @@ export default function AdminDashboard() {
   };
 
   const fetchAccounts = async () => {
-    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching accounts:', error);
+      toast.error('Failed to load accounts');
+      return;
+    }
     if (data) setAccounts(data);
   };
 
@@ -1015,26 +1021,41 @@ export default function AdminDashboard() {
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
                   <h3 className="text-2xl font-black font-heading italic uppercase">Poster <span className="text-brand-blue not-italic">Terminal</span></h3>
-                  <form onSubmit={handleAddEvent} className="space-y-4">
-                    <input value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} placeholder="Event Identity" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                    <div className="grid grid-cols-2 gap-4">
+                  <form onSubmit={handleAddEvent} className="space-y-6">
+                    <div className="space-y-4">
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Identity & Schedule</label>
+                      <input value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} placeholder="Event Name / Title" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <input type="date" value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                      <div className="flex items-center gap-2">
-                        <input 
-                           type="text"
-                           value={eventForm.image} 
-                           readOnly
-                           placeholder="Upload Poster Image" 
-                           className="flex-grow px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs opacity-50 cursor-not-allowed truncate" 
-                        />
-                        <label className="h-[52px] px-6 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-black text-[9px] uppercase tracking-[0.2em] flex items-center justify-center cursor-pointer hover:bg-brand-blue hover:text-white transition-all shadow-md shrink-0">
-                          Upload
-                          <input type="file" className="hidden" accept="image/*" onChange={handleUploadEventImage} />
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Visual Identity (Poster)</label>
+                      <div className="aspect-[4/5] bg-black/5 rounded-[32px] overflow-hidden border border-white relative group shadow-inner">
+                        {eventForm.image ? (
+                          <img src={eventForm.image} className="w-full h-full object-cover" alt="Preview" />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30">
+                            <Plus size={32} className="mb-2" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">No Poster Selected</p>
+                          </div>
+                        )}
+                        <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all backdrop-blur-sm">
+                          <span className="bg-white text-black px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl">
+                            {uploadingEvent ? 'Uploading...' : 'Browse Computer'}
+                          </span>
+                          <input type="file" className="hidden" accept="image/*" onChange={handleUploadEventImage} disabled={uploadingEvent} />
                         </label>
                       </div>
                     </div>
-                    <textarea value={eventForm.desc} onChange={e => setEventForm({...eventForm, desc: e.target.value})} placeholder="Event Intelligence..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-[32px] font-bold outline-none min-h-[120px] resize-none text-xs" />
-                    <button type="submit" disabled={uploadingEvent} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Poster</button>
+
+                    <div className="space-y-4">
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Intelligence</label>
+                      <textarea value={eventForm.desc} onChange={e => setEventForm({...eventForm, desc: e.target.value})} placeholder="Detailed description of the event..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-[32px] font-bold outline-none min-h-[120px] resize-none text-xs" />
+                    </div>
+
+                    <button type="submit" disabled={uploadingEvent} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">
+                      Deploy Event Poster
+                    </button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
