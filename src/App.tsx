@@ -27,12 +27,6 @@ const InquiryForm = lazy(() => import('./components/InquiryForm'));
 const PromotionsPoster = lazy(() => import('./components/PromotionsPoster'));
 const CarwashShowcase = lazy(() => import('./components/CarwashShowcase'));
 const ProfileSettings = lazy(() => import('./components/ProfileSettings'));
-import { motion, useScroll, useSpring } from 'motion/react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect, ReactNode } from 'react';
-import { Ticket as TicketIcon, Download, X } from 'lucide-react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { InquiryProvider } from './context/InquiryContext';
