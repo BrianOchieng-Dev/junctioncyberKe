@@ -179,13 +179,13 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
         </motion.div>
       </div>
 
-      {/* Solid White Bottom Pill - Floating Stats */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 z-20 flex justify-center">
+      {/* Liquid Glass Bottom Pill - Floating Stats */}
+      <div className="absolute -bottom-12 md:-bottom-16 left-0 right-0 px-4 z-20 flex justify-center">
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.8 }}
-          className="w-full max-w-5xl bg-white rounded-[40px] md:rounded-full p-6 md:px-12 md:py-8 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12"
+          className="w-full max-w-5xl bg-white/5 backdrop-blur-3xl border border-white/20 rounded-[40px] md:rounded-[40px] lg:rounded-full p-6 md:px-12 md:py-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12"
         >
           {[
             { label: 'Happy Clients', value: '15k+' },
@@ -194,9 +194,9 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
             { label: 'Years Experience', value: '12' },
           ].map((stat, i) => (
             <div key={stat.label} className="flex flex-col items-center md:items-start text-center md:text-left w-full md:w-auto relative">
-               <span className="text-[9px] font-black uppercase tracking-[0.2em] text-black/40 mb-2">{stat.label}</span>
-               <span className="text-3xl font-black tracking-tighter text-[#1D1D1F]">{stat.value}</span>
-               {i !== 3 && <div className="hidden md:block absolute right-[-2.5rem] top-1/2 -translate-y-1/2 w-[1px] h-10 bg-black/5" />}
+               <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">{stat.label}</span>
+               <span className="text-3xl font-black tracking-tighter text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">{stat.value}</span>
+               {i !== 3 && <div className="hidden md:block absolute right-[-2.5rem] top-1/2 -translate-y-1/2 w-[1px] h-10 bg-white/20" />}
             </div>
           ))}
         </motion.div>
