@@ -189,8 +189,8 @@ export default function InquiryForm() {
 
                 <button 
                   type="submit" 
-                  disabled={loading}
-                  className="btn-primary w-full py-5 disabled:opacity-50 flex items-center justify-center gap-3"
+                  disabled={loading || !formData.name || !formData.email || !formData.message}
+                  className="btn-primary w-full py-5 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all hover:scale-[1.01]"
                 >
                    {loading ? (
                      <>

@@ -178,18 +178,18 @@ export default function Hero({ onOpenQuote, isAuthenticated }: HeroProps) {
           {t('hero_desc')}
         </p>
 
-        <div className="mt-4 md:mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row px-4">
-          <button className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-[#1D1D1F] px-8 py-4 font-bold text-white transition-all hover:bg-brand-blue group">
+        <div className="mt-4 md:mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row px-4">
+          <button className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-brand-blue px-10 py-5 font-black text-white shadow-xl shadow-brand-blue/30 transition-all hover:scale-105 active:scale-95 group uppercase tracking-widest text-xs">
             {t('explore_btn')}
-            <ChevronRight className="transition-transform group-hover:translate-x-1" size={20} />
+            <ChevronRight className="transition-transform group-hover:translate-x-1" size={18} />
           </button>
           
           <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
             <button 
               onClick={onOpenQuote}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full border border-black/10 bg-black/5 px-6 py-4 font-bold text-[#1D1D1F] backdrop-blur-md transition-all hover:bg-black/10 text-sm whitespace-nowrap"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full border border-[#1D1D1F]/30 bg-white/90 px-8 py-5 font-bold text-[#1D1D1F] shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:border-[#1D1D1F]/50 text-xs whitespace-nowrap uppercase tracking-widest"
             >
-              <FileText size={18} /> {t('request_quote')}
+              <FileText size={16} /> {t('request_quote')}
             </button>
           </div>
         </div>

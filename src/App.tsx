@@ -59,9 +59,9 @@ function NotFound() {
           <div className="h-24 w-24 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-8 animate-pulse">
              <X size={48} />
           </div>
-          <h1 className="text-4xl font-black mb-4">Error 404</h1>
-          <p className="text-black/50 mb-8 font-medium">The terminal could not locate the requested transmission. The path may have been encrypted or purged.</p>
-          <a href="/" className="btn-primary w-full shadow-brand-blue/30">Return to Base Station</a>
+          <h1 className="text-5xl font-black mb-4 tracking-tighter text-[#1D1D1F]">Error 404</h1>
+          <p className="text-black/50 mb-8 font-medium leading-relaxed">The terminal could not locate the requested transmission. The path may have been encrypted or purged.</p>
+          <a href="/" className="btn-primary w-full py-5 flex items-center justify-center font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-brand-blue/30 hover:scale-[1.02] active:scale-95 transition-all">Return to Base Station</a>
        </div>
     </div>
   );
@@ -330,7 +330,11 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
               <label className="text-xs font-bold text-black/40 ml-2">Details / Message</label>
               <textarea name="message" rows={3} placeholder="Tell us more about your request..." className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium text-black/60"></textarea>
             </div>
-            <button type="submit" disabled={formLoading} className="w-full flex items-center justify-center gap-3 rounded-full bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-transform active:scale-95 disabled:opacity-50 relative overflow-hidden group">
+            <button 
+              type="submit" 
+              disabled={formLoading} 
+              className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1D1D1F] hover:bg-brand-blue py-5 font-black text-white shadow-xl shadow-black/10 hover:shadow-brand-blue/30 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed relative overflow-hidden group uppercase tracking-[0.2em] text-[10px]"
+            >
               {formLoading ? (
                  <div className="flex items-center gap-3">
                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Facebook, Chrome, Eye, EyeOff, User, Lock, Mail, MapPin, RefreshCw, Phone, Camera } from 'lucide-react';
+import { LogIn, UserPlus, Eye, EyeOff, User, Lock, Mail, MapPin, RefreshCw, Phone, Camera } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { toast } from 'react-toastify';
 import LoadingSpinner from './LoadingSpinner';
@@ -117,19 +117,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     }
   };
 
-  const handleOAuth = async (provider: 'google' | 'facebook') => {
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (oauthError) throw oauthError;
-    } catch (err: any) {
-      setError(err.message || `${provider} login failed`);
-    }
-  };
+
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -307,8 +295,8 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
         <button 
           type="submit" 
-          disabled={loading}
-          className="btn-primary w-full mt-4 h-16 flex items-center justify-center relative overflow-hidden group"
+          disabled={loading || !email || !password || (!isLogin && (!fullName || !phone || !location))}
+          className="btn-primary w-full mt-4 h-16 flex items-center justify-center relative overflow-hidden group disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
           {loading ? (
              <div className="flex items-center gap-3">
@@ -327,25 +315,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         </button>
       </form>
 
-      <div className="relative py-4">
-        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/5"></div></div>
-        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-black/30">{t('or_continue_with')}</span></div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <button 
-          onClick={() => handleOAuth('facebook')}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-black/5 py-3 hover:bg-black/5 transition-all font-semibold"
-        >
-          <Facebook size={18} className="text-[#1877F2]" /> Facebook
-        </button>
-        <button 
-          onClick={() => handleOAuth('google')}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-black/5 py-3 hover:bg-black/5 transition-all font-semibold"
-        >
-          <Chrome size={18} /> Google
-        </button>
-      </div>
     </div>
   );
 }

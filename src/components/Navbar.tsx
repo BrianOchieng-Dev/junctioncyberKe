@@ -185,7 +185,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               </button>
             )}
 
-            <button onClick={onBook} className="rounded-full bg-[#1D1D1F] px-8 py-3 text-sm font-bold text-white transition-transform hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-lg shadow-black/10">
+            <button onClick={onBook} className="hidden md:block rounded-full bg-[#1D1D1F] px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-black text-white transition-all hover:bg-brand-blue hover:scale-105 active:scale-95 shadow-xl shadow-black/10">
               {t('book_now')}
             </button>
           </div>
@@ -259,7 +259,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
               Sign In
             </button>
           )}
-          <button onClick={() => { setIsOpen(false); onBook(); }} className="w-full rounded-full bg-[#1D1D1F] py-3 font-semibold text-white">
+          <button onClick={() => { setIsOpen(false); onBook(); }} className="w-full rounded-full bg-[#1D1D1F] py-5 font-black uppercase tracking-[0.2em] text-[10px] text-white shadow-xl">
             {t('book_now')}
           </button>
         </motion.div>
