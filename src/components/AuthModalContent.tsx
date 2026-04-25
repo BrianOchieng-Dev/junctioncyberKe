@@ -193,7 +193,10 @@ export default function AuthModal({ onClose }: AuthModalProps) {
             <div className="relative group">
               <div className="h-20 w-20 rounded-full bg-black/5 overflow-hidden ring-4 ring-brand-blue/10 flex items-center justify-center">
                 {uploading ? (
-                  <RefreshCw className="animate-spin text-brand-blue" />
+                  <div className="flex flex-col items-center justify-center h-full w-full bg-brand-blue/5">
+                    <RefreshCw size={16} className="animate-spin text-brand-blue mb-1" />
+                    <span className="text-[6px] font-black tracking-widest uppercase text-brand-blue">Uploading</span>
+                  </div>
                 ) : (
                   <img 
                     src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || 'temp'}`} 

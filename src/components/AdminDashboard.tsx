@@ -406,19 +406,66 @@ export default function AdminDashboard() {
     if (data) setAccounts(data);
   };
 
+  const handleUpdateRole = async (userId: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    if (!error) {
+      toast.success(`Role updated to ${newRole}`);
+      fetchAccounts();
+    } else {
+      toast.error('Failed to update role');
+    }
+  };
+
   const fetchEvents = async () => {
     const { data } = await supabase.from('business_events').select('*').order('created_at', { ascending: false });
     if (data) setEvents(data);
   };
 
+  const handleUploadEventImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingEvent(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('events')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('events')
+        .getPublicUrl(filePath);
+
+      setEventForm({ ...eventForm, image: publicUrl });
+      toast.success('Poster uploaded! Now click Deploy.');
+    } catch (error: any) {
+      toast.error('Error uploading poster');
+      console.error(error);
+    } finally {
+      setUploadingEvent(false);
+    }
+  };
+
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!eventForm.image) {
+      toast.error('Please upload a poster image first');
+      return;
+    }
     setUploadingEvent(true);
     const { error } = await supabase.from('business_events').insert([eventForm]);
     if (!error) {
       toast.success('Poster Deployed!');
       setEventForm({ title: '', date: '', image: '', desc: '' });
       fetchEvents();
+    } else {
+      toast.error('Failed to deploy poster');
     }
     setUploadingEvent(false);
   };
@@ -962,39 +1009,7 @@ export default function AdminDashboard() {
               </motion.div>
             )}
 
-            {activeTab === 'accounts' && (
-              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
-                <h3 className="text-2xl font-black font-heading italic uppercase mb-8">Customer <span className="text-brand-blue not-italic">Accounts</span></h3>
-                <div className="flex-grow overflow-y-auto no-scrollbar">
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {accounts.map(acc => (
-                      <motion.div 
-                        key={acc.id} 
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        className="p-6 bg-white/40 border border-white rounded-[32px] flex items-center gap-6 group shadow-lg shadow-black/5 hover:bg-white/60 transition-all"
-                      >
-                        <div className="h-16 w-16 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
-                          <img src={acc.avatar_url || "https://i.pravatar.cc/100"} className="w-full h-full object-cover" alt="Profile" />
-                        </div>
-                        <div className="min-w-0 flex-grow">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous'}</p>
-                            {onlineUserIds.has(acc.id) && (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
-                                Online
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[9px] font-black text-brand-blue uppercase tracking-widest truncate">{acc.email}</p>
-                          <p className="text-[8px] font-bold text-black/30 mt-1 uppercase tracking-tighter italic">ID: {acc.id.slice(0, 8)}...</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
+
 
             {activeTab === 'events' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
@@ -1004,7 +1019,19 @@ export default function AdminDashboard() {
                     <input value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} placeholder="Event Identity" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     <div className="grid grid-cols-2 gap-4">
                       <input type="date" value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                      <input value={eventForm.image} onChange={e => setEventForm({...eventForm, image: e.target.value})} placeholder="Visual ID URL" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <div className="flex items-center gap-2">
+                        <input 
+                           type="text"
+                           value={eventForm.image} 
+                           readOnly
+                           placeholder="Upload Poster Image" 
+                           className="flex-grow px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs opacity-50 cursor-not-allowed truncate" 
+                        />
+                        <label className="h-[52px] px-6 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-black text-[9px] uppercase tracking-[0.2em] flex items-center justify-center cursor-pointer hover:bg-brand-blue hover:text-white transition-all shadow-md shrink-0">
+                          Upload
+                          <input type="file" className="hidden" accept="image/*" onChange={handleUploadEventImage} />
+                        </label>
+                      </div>
                     </div>
                     <textarea value={eventForm.desc} onChange={e => setEventForm({...eventForm, desc: e.target.value})} placeholder="Event Intelligence..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-[32px] font-bold outline-none min-h-[120px] resize-none text-xs" />
                     <button type="submit" disabled={uploadingEvent} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Poster</button>
@@ -1035,6 +1062,65 @@ export default function AdminDashboard() {
                       </motion.div>
                     ))}
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'accounts' && (
+              <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Accounts <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-brand-blue/5 border border-brand-blue/10 rounded-full">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse" />
+                    <span className="text-[8px] font-black text-brand-blue uppercase tracking-widest">{accounts.length} Total Accounts</span>
+                  </div>
+                </div>
+                <div className="flex-grow overflow-y-auto no-scrollbar grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {accounts.map(acc => {
+                    const isOnline = onlineUserIds.has(acc.id);
+                    return (
+                      <motion.div 
+                        key={acc.id} 
+                        whileHover={{ y: -4 }}
+                        className="p-6 bg-white/40 border border-white rounded-[32px] flex flex-col group shadow-sm hover:shadow-xl transition-all relative overflow-hidden"
+                      >
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="relative h-14 w-14 rounded-2xl overflow-hidden shadow-lg border border-white/40 shrink-0">
+                            <img src={acc.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${acc.full_name || 'temp'}`} className="h-full w-full object-cover" alt="User" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous User'}</p>
+                            <p className="text-[9px] font-bold text-black/40 truncate mt-1">{acc.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-black/5">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", isOnline ? "bg-semantic-green shadow-[0_0_8px_rgba(52,199,89,0.8)] animate-pulse" : "bg-black/20")} />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-black/40">{isOnline ? 'Online' : 'Offline'}</span>
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleUpdateRole(acc.id, acc.role)}
+                            className={cn(
+                              "px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all",
+                              acc.role === 'admin' 
+                                ? "bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20" 
+                                : "bg-white/60 text-black/40 hover:bg-black/5"
+                            )}
+                          >
+                            {acc.role === 'admin' ? 'Admin Access' : 'User Access'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  {accounts.length === 0 && (
+                     <div className="col-span-full h-64 flex flex-col items-center justify-center opacity-20">
+                       <User size={48} className="mb-4" />
+                       <p className="text-[10px] font-black uppercase tracking-[0.4em]">No registered accounts</p>
+                     </div>
+                  )}
                 </div>
               </motion.div>
             )}

@@ -122,12 +122,7 @@ export default function Services({ onBook, onGetTicket }: ServicesProps) {
                       >
                         <Calendar size={16} /> {t('book_now')}
                       </button>
-                      <button 
-                        onClick={() => onGetTicket(service.title)}
-                        className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-[#1D1D1F] px-6 py-3 bg-black/5 hover:bg-black/10 rounded-full transition-all"
-                      >
-                        <TicketIcon size={16} /> {t('get_ticket')}
-                      </button>
+
                     </div>
                   </motion.div>
                 ))}

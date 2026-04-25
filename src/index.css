@@ -224,3 +224,23 @@
 .Toastify__close-button:hover {
   opacity: 1 !important;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #ticket-content, #ticket-content * {
+    visibility: visible;
+  }
+  #ticket-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

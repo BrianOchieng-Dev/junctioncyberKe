@@ -40,6 +40,7 @@ const ServicesSummary = lazy(() => import('./components/ServicesSummary'));
 const AboutSummary = lazy(() => import('./components/AboutSummary'));
 const InquiryForm = lazy(() => import('./components/InquiryForm'));
 const PromotionsPoster = lazy(() => import('./components/PromotionsPoster'));
+const EventsShowcase = lazy(() => import('./components/EventsShowcase'));
 const CarwashShowcase = lazy(() => import('./components/CarwashShowcase'));
 const ProfileSettings = lazy(() => import('./components/ProfileSettings'));
 
@@ -200,7 +201,7 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
           {modalType === 'auth' ? <AuthModalContent onClose={() => setModalType(null)} /> : modalType === 'profile' ? <ProfileSettings user={user} onClose={() => setModalType(null)} /> : modalType === 'ticket' ? (
           /* ... existing ticket code ... */
           <div className="p-8 space-y-6">
-            <div className="glass-card bg-brand-blue/5 border-dashed border-2 border-brand-blue/20 p-8 rounded-[40px] relative overflow-hidden">
+            <div id="ticket-content" className="glass-card bg-brand-blue/5 border-dashed border-2 border-brand-blue/20 p-8 rounded-[40px] relative overflow-hidden">
                <div className="flex justify-between items-start mb-8">
                   <div>
                     <h4 className="text-2xl font-black tracking-tighter text-brand-blue uppercase">The Junction</h4>
@@ -237,7 +238,7 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
             </div>
             <button 
               onClick={() => { window.print(); setModalType(null); }}
-              className="w-full rounded-full bg-brand-blue py-4 font-bold text-white shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-2"
+              className="no-print w-full rounded-full bg-brand-blue py-4 font-bold text-white shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-2"
             >
                <Download size={20} /> Download Digital Ticket
             </button>
@@ -394,6 +395,7 @@ function LanguageConsumer({ user, modalType, setModalType }: any) {
                   onOpenQuote={() => setModalType('quote')} 
                   isAuthenticated={!!user}
                 />
+                <EventsShowcase />
                 <PromotionsPoster />
                 <ServicesSummary />
                 <CarwashShowcase />
