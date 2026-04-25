@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import React, { useState, useEffect, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { LogIn, UserPlus, Facebook, Chrome, Eye, EyeOff, User, Lock, Mail, MapPin, RefreshCw, Phone, Camera } from 'lucide-react';
