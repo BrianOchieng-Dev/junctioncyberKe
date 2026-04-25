@@ -5,6 +5,20 @@ import { LogIn, UserPlus, Facebook, Chrome, Eye, EyeOff, User, Lock, Mail, MapPi
 import { useLanguage } from '../context/LanguageContext';
 import { toast } from 'react-toastify';
 import LoadingSpinner from './LoadingSpinner';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+});
+
+const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  fullName: z.string().min(2, 'Full name is required'),
+  phone: z.string().regex(/^(\+254|0)[17]\d{8}$/, 'Valid Kenyan phone number required'),
+  location: z.string().min(2, 'Location is required')
+});
 
 interface AuthModalProps {
   onClose: () => void;
@@ -51,24 +65,15 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     setLoading(true);
     setError(null);
     
-    // Enhanced validation for registration and admin login
-    const passError = validatePassword(password, email);
-    if (passError) {
-      setError(passError);
-      setLoading(false);
-      return;
-    }
-
-    if (!isLogin) {
-      if (!fullName || !phone || !location) {
-        setError('Please fill in all registration fields.');
-        setLoading(false);
-        return;
+    try {
+      if (isLogin) {
+        loginSchema.parse({ email, password });
+      } else {
+        registerSchema.parse({ email, password, fullName, phone, location });
       }
-      
-      const phoneRegex = /^(\+254|0)[17]\d{8}$/;
-      if (!phoneRegex.test(phone)) {
-        setError('Please enter a valid phone number.');
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError((err as any).errors[0].message);
         setLoading(false);
         return;
       }
@@ -300,16 +305,20 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         <button 
           type="submit" 
           disabled={loading}
-          className="btn-primary w-full mt-4 h-16 flex items-center justify-center"
+          className="btn-primary w-full mt-4 h-16 flex items-center justify-center relative overflow-hidden group"
         >
           {loading ? (
-            <div className="scale-50">
-              <LoadingSpinner />
-            </div>
+             <div className="flex items-center gap-3">
+               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+               </svg>
+               <span className="font-bold tracking-wider">{isLogin ? 'Authenticating...' : 'Creating Account...'}</span>
+             </div>
           ) : (
             <div className="flex items-center gap-2">
               {isLogin ? <LogIn size={20} /> : <UserPlus size={20} />}
-              <span>{isLogin ? t('log_in') : t('register')}</span>
+              <span className="font-bold">{isLogin ? t('log_in') : t('register')}</span>
             </div>
           )}
         </button>

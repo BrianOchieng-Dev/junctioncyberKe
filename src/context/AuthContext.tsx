@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   profile: any | null;
   isAdmin: boolean;
+  hasRole: (role: string) => boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -113,13 +114,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await fetchProfile(user.id);
   };
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = profile?.role === 'admin' || user?.email === ADMIN_EMAIL;
+
+  const hasRole = (role: string) => {
+    if (user?.email === ADMIN_EMAIL && role === 'admin') return true;
+    return profile?.role === role;
+  };
 
   const value = {
     user,
     session,
     profile,
     isAdmin,
+    hasRole,
     loading,
     signOut,
     refreshProfile

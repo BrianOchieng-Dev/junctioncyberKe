@@ -4,6 +4,21 @@ import { useState, useEffect, ReactNode, lazy, Suspense } from 'react';
 import { Ticket as TicketIcon, Download, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { z } from 'zod';
+
+const bookingSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Invalid email format'),
+  service: z.string().min(1, 'Please select a service'),
+  phone: z.string().regex(/^(\+254|0)[17]\d{8}$/, 'Valid Kenyan phone number required'),
+  date: z.string().min(1, 'Date is required'),
+  time: z.string().min(1, 'Time is required'),
+});
+
+const inquirySchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Invalid email format'),
+});
 
 import Hero from './components/Hero';
 import Navbar from './components/Navbar';
@@ -83,17 +98,34 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
 
     try {
       if (modalType === 'book') {
+        const timeVal = formData.get('time') as string;
+        const phoneVal = formData.get('phone') as string;
+        const nameVal = formData.get('name') as string;
+        const emailVal = formData.get('email') as string;
+        
+        try {
+          bookingSchema.parse({
+            name: nameVal,
+            email: emailVal,
+            service: serviceVal,
+            phone: phoneVal,
+            date: dateVal,
+            time: timeVal
+          });
+        } catch (err) {
+          if (err instanceof z.ZodError) {
+             toast.error((err as any).errors[0].message);
+             setFormLoading(false);
+             return;
+          }
+        }
         if (!user) {
           toast.warn('Please synchronize your account profile (Login) before initiating a booking.');
           setFormLoading(false);
           return;
         }
 
-        const dateVal = formData.get('date') as string;
-        const timeVal = formData.get('time') as string;
-        const phoneVal = formData.get('phone') as string;
-        const nameVal = formData.get('name') as string;
-        const emailVal = formData.get('email') as string;
+
 
         // Double-booking prevention check
         const { data: existing, error: checkError } = await supabase
@@ -126,6 +158,18 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
         if (error) throw error;
         toast.success(`Successfully booked ${serviceVal} for ${dateVal} @ ${timeVal}!`);
       } else {
+        try {
+           inquirySchema.parse({
+             name: data.name,
+             email: data.email
+           });
+        } catch (err) {
+           if (err instanceof z.ZodError) {
+             toast.error((err as any).errors[0].message);
+             setFormLoading(false);
+             return;
+           }
+        }
         const { error } = await supabase.from('inquiries').insert([data]);
         if (error) throw error;
         toast.success('Successfully Submitted!');
@@ -285,15 +329,15 @@ function Layout({ children, modalType, setModalType, t, onOpenProfile }: LayoutP
               <label className="text-xs font-bold text-black/40 ml-2">Details / Message</label>
               <textarea name="message" rows={3} placeholder="Tell us more about your request..." className="w-full rounded-2xl border-black/5 bg-black/5 p-4 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 transition-all font-medium text-black/60"></textarea>
             </div>
-            <button type="submit" disabled={formLoading} className="w-full flex items-center justify-center gap-3 rounded-full bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-transform active:scale-95 disabled:opacity-50">
+            <button type="submit" disabled={formLoading} className="w-full flex items-center justify-center gap-3 rounded-full bg-brand-blue py-4 font-bold text-white shadow-lg shadow-brand-blue/20 transition-transform active:scale-95 disabled:opacity-50 relative overflow-hidden group">
               {formLoading ? (
-                 <>
+                 <div className="flex items-center gap-3">
                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Submitting...
-                 </>
+                    <span className="tracking-wider">Processing...</span>
+                 </div>
               ) : 'Submit Request'}
             </button>
           </form>
