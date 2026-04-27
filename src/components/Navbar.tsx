@@ -109,7 +109,7 @@ export default function Navbar({ onSignIn, onOpenProfile, onBook }: NavbarProps)
                   <Link 
                     to="/admin" 
                     className="h-11 w-11 glass-card flex items-center justify-center text-brand-blue hover:bg-brand-blue hover:text-white transition-all shadow-sm active:scale-95 relative"
-                    title="Admin Terminal"
+                    title="Admin Dashboard"
                   >
                      <LayoutDashboard size={20} />
                      {adminUnreadCount > 0 && (
