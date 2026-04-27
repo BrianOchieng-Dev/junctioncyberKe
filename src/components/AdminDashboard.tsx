@@ -129,20 +129,20 @@ export default function AdminDashboard() {
     fetchEvents();
     fetchBookings();
 
-    // Real-time listeners for all key tables
+    // Real-time listeners for all key tables - using unique admin-prefixed names to avoid conflicts
     const channels = [
-      supabase.channel('public:inquiries').on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, fetchInquiries),
-      supabase.channel('public:business_events').on('postgres_changes', { event: '*', schema: 'public', table: 'business_events' }, fetchEvents),
-      supabase.channel('public:carwash_showcase').on('postgres_changes', { event: '*', schema: 'public', table: 'carwash_showcase' }, fetchCarwashItems),
-      supabase.channel('public:profiles').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAccounts),
-      supabase.channel('public:gallery').on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, fetchGalleryItems),
-      supabase.channel('public:team_members').on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, fetchTeamMembers),
-      supabase.channel('public:site_settings').on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, fetchSettings)
+      supabase.channel('admin_inquiries').on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, fetchInquiries),
+      supabase.channel('admin_events').on('postgres_changes', { event: '*', schema: 'public', table: 'business_events' }, fetchEvents),
+      supabase.channel('admin_carwash').on('postgres_changes', { event: '*', schema: 'public', table: 'carwash_showcase' }, fetchCarwashItems),
+      supabase.channel('admin_profiles').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAccounts),
+      supabase.channel('admin_gallery').on('postgres_changes', { event: '*', schema: 'public', table: 'gallery' }, fetchGalleryItems),
+      supabase.channel('admin_team').on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, fetchTeamMembers),
+      supabase.channel('admin_settings').on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, fetchSettings)
     ];
 
     channels.forEach(channel => channel.subscribe());
 
-    const presenceChannel = supabase.channel('online-users');
+    const presenceChannel = supabase.channel('admin-presence');
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const newState = presenceChannel.presenceState();
@@ -199,6 +199,30 @@ export default function AdminDashboard() {
     const { data } = await supabase.from('carwash_showcase').select('*').order('created_at', { ascending: false });
     if (data) setCarwashItems(data);
     setCarwashLoading(false);
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('business_events')
+        .select('*')
+        .order('date', { ascending: true });
+      
+      if (error) {
+        if (error.code === 'PGRST116' || (error as any).status === 404) {
+          console.warn('business_events table missing');
+        } else {
+          throw error;
+        }
+      } else {
+        setEvents(data || []);
+      }
+    } catch (error: any) {
+      console.error('Error fetching events:', error);
+      if (error.message?.includes('not found')) {
+        toast.error('Events table not found in database');
+      }
+    }
   };
 
   const fetchInquiries = async () => {
@@ -560,10 +584,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchEvents = async () => {
-    const { data } = await supabase.from('business_events').select('*').order('created_at', { ascending: false });
-    if (data) setEvents(data);
-  };
+
 
   const handleUploadEventImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
