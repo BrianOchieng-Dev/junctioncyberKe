@@ -304,19 +304,79 @@ export default function AdminDashboard() {
       setUploadingBg(true);
       if (!event.target.files || event.target.files.length === 0) return;
       const file = event.target.files[0];
-      const { data, error } = await supabase.storage.from('avatars').upload(`settings/hero-${Date.now()}-${file.name}`, file);
+      const { data, error } = await supabase.storage.from('avatars').upload(`settings/hero-${Date.now()}`, file);
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path);
       setHeroBg(publicUrl);
       
-      // Auto-save to persist immediately
       await supabase.from('site_settings').upsert({ key: 'hero_bg', value: publicUrl }, { onConflict: 'key' });
-      
       toast.success('Environment Synchronized!');
     } catch (error: any) {
-      toast.error('Upload failed: ' + error.message);
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "avatars" bucket exists'}`);
     } finally {
       setUploadingBg(false);
+    }
+  };
+
+  const handleUploadCarwashImage = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === 'before') setUploadingBefore(true);
+    else setUploadingAfter(true);
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `carwash-${type}-${Date.now()}.${fileExt}`;
+
+    try {
+      const { data, error: uploadError } = await supabase.storage
+        .from('showcase')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('showcase')
+        .getPublicUrl(fileName);
+
+      setCarwashForm(prev => ({ ...prev, [type]: publicUrl }));
+      toast.success(`${type === 'before' ? 'Source' : 'Target'} image uploaded!`);
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "showcase" bucket exists and is public'}`);
+    } finally {
+      if (type === 'before') setUploadingBefore(false);
+      else setUploadingAfter(false);
+    }
+  };
+
+  const handleUploadGalleryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingGallery(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `gallery-${Date.now()}.${fileExt}`;
+
+    try {
+      const { data, error: uploadError } = await supabase.storage
+        .from('showcase')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('showcase')
+        .getPublicUrl(fileName);
+
+      setGalleryImageUrl(publicUrl);
+      toast.success('Gallery asset uploaded!');
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "showcase" bucket exists'}`);
+    } finally {
+      setUploadingGallery(false);
     }
   };
 
@@ -333,9 +393,12 @@ export default function AdminDashboard() {
     setUploadingGallery(true);
     const { error } = await supabase.from('gallery').insert([{ category: selectedCategory, image_url: galleryImageUrl }]);
     if (!error) {
-      toast.success('Added!');
+      toast.success('Asset Synchronized!');
       setGalleryImageUrl('');
       fetchGalleryItems();
+    } else {
+      console.error('Gallery Error:', error);
+      toast.error(`Sync failed: ${error.message}`);
     }
     setUploadingGallery(false);
   };
@@ -360,9 +423,12 @@ export default function AdminDashboard() {
     setUploadingPromo(true);
     const { error } = await supabase.from('promotions').insert([promoForm]);
     if (!error) {
-      toast.success('Published!');
+      toast.success('Campaign Published!');
       setPromoForm({ title: '', offer: '', desc: '', img: '', tag: GALLERY_CATEGORIES[0], deadline: '' });
       fetchPromotions();
+    } else {
+      console.error('Promo Error:', error);
+      toast.error(`Publication failed: ${error.message}`);
     }
     setUploadingPromo(false);
   };
@@ -372,6 +438,64 @@ export default function AdminDashboard() {
     if (!error) {
       toast.success('Deleted');
       fetchPromotions();
+    }
+  };
+
+  const handleUploadTeamMemberImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMember(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `team-${Date.now()}.${fileExt}`;
+
+    try {
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setTeamForm(prev => ({ ...prev, image: publicUrl }));
+      toast.success('Personnel visual asset synchronized!');
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "avatars" bucket exists'}`);
+    } finally {
+      setUploadingMember(false);
+    }
+  };
+
+  const handleUploadPromoImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPromo(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `promo-${Date.now()}.${fileExt}`;
+
+    try {
+      const { data, error: uploadError } = await supabase.storage
+        .from('showcase')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('showcase')
+        .getPublicUrl(fileName);
+
+      setPromoForm(prev => ({ ...prev, img: publicUrl }));
+      toast.success('Promo asset synchronized!');
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "showcase" bucket exists'}`);
+    } finally {
+      setUploadingPromo(false);
     }
   };
 
@@ -387,9 +511,12 @@ export default function AdminDashboard() {
     setUploadingMember(true);
     const { error } = await supabase.from('team_members').insert([teamForm]);
     if (!error) {
-      toast.success('Added!');
+      toast.success('Personnel Deployed!');
       setTeamForm({ name: '', role: '', image: '' });
       fetchTeamMembers();
+    } else {
+      console.error('Team Error:', error);
+      toast.error(`Deployment failed: ${error.message}`);
     }
     setUploadingMember(false);
   };
@@ -403,13 +530,23 @@ export default function AdminDashboard() {
   };
 
   const fetchAccounts = async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) {
+    try {
+      // First try to fetch with created_at ordering
+      let { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      
+      // If that fails (e.g. column doesn't exist), try without ordering
+      if (error) {
+        console.warn('Falling back to unordered fetch:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase.from('profiles').select('*');
+        if (fallbackError) throw fallbackError;
+        data = fallbackData;
+      }
+      
+      if (data) setAccounts(data);
+    } catch (error: any) {
       console.error('Error fetching accounts:', error);
-      toast.error('Failed to load accounts');
-      return;
+      toast.error('Failed to load accounts: ' + (error.message || 'Unknown error'));
     }
-    if (data) setAccounts(data);
   };
 
   const handleUpdateRole = async (userId: string, currentRole: string) => {
@@ -434,13 +571,16 @@ export default function AdminDashboard() {
 
     setUploadingEvent(true);
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `poster-${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
     const filePath = `${fileName}`;
 
     try {
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('events')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
@@ -451,8 +591,8 @@ export default function AdminDashboard() {
       setEventForm({ ...eventForm, image: publicUrl });
       toast.success('Poster uploaded! Now click Deploy.');
     } catch (error: any) {
-      toast.error('Error uploading poster');
-      console.error(error);
+      console.error('Upload Error:', error);
+      toast.error(`Upload failed: ${error.message || 'Check if "events" bucket exists and is public'}`);
     } finally {
       setUploadingEvent(false);
     }
@@ -471,7 +611,8 @@ export default function AdminDashboard() {
       setEventForm({ title: '', date: '', image: '', desc: '' });
       fetchEvents();
     } else {
-      toast.error('Failed to deploy poster');
+      console.error('Event Error:', error);
+      toast.error(`Deployment failed: ${error.message}`);
     }
     setUploadingEvent(false);
   };
@@ -818,11 +959,16 @@ export default function AdminDashboard() {
                         {GALLERY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-black/30 ml-4">Intelligence URL</label>
-                      <input value={galleryImageUrl} onChange={e => setGalleryImageUrl(e.target.value)} placeholder="https://..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <div className="space-y-4">
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Deployment Coordinates</label>
+                      <div className="flex gap-4">
+                        <input value={galleryImageUrl} onChange={e => setGalleryImageUrl(e.target.value)} placeholder="Secure Image URL..." className="flex-grow px-8 py-5 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                        <label className="px-8 py-5 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-black text-[8px] uppercase tracking-[0.3em] cursor-pointer hover:bg-brand-blue hover:text-white transition-all font-heading shadow-lg">
+                          Upload <input type="file" className="hidden" onChange={handleUploadGalleryImage} disabled={uploadingGallery} />
+                        </label>
+                      </div>
                     </div>
-                    <button type="submit" disabled={uploadingGallery} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Asset</button>
+                    <button type="submit" disabled={uploadingGallery || !galleryImageUrl} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Asset</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
@@ -870,13 +1016,7 @@ export default function AdminDashboard() {
                           {carwashForm.before && <img src={carwashForm.before} className="w-full h-full object-cover" alt="Before" />}
                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all">
                             <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Source</span>
-                            <input type="file" className="hidden" onChange={async (e) => {
-                               const file = e.target.files?.[0]; if(!file) return;
-                               setUploadingBefore(true);
-                               const { data } = await supabase.storage.from('avatars').upload(`carwash/b-${Date.now()}`, file);
-                               if(data) { const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path); setCarwashForm(prev => ({...prev, before: publicUrl})); }
-                               setUploadingBefore(false);
-                            }} />
+                            <input type="file" className="hidden" onChange={(e) => handleUploadCarwashImage(e, 'before')} disabled={uploadingBefore} />
                           </label>
                         </div>
                         <input value={carwashForm.before} onChange={e => setCarwashForm({...carwashForm, before: e.target.value})} placeholder="URL 1" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
@@ -886,13 +1026,7 @@ export default function AdminDashboard() {
                           {carwashForm.after && <img src={carwashForm.after} className="w-full h-full object-cover" alt="After" />}
                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all">
                             <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Target</span>
-                            <input type="file" className="hidden" onChange={async (e) => {
-                               const file = e.target.files?.[0]; if(!file) return;
-                               setUploadingAfter(true);
-                               const { data } = await supabase.storage.from('avatars').upload(`carwash/a-${Date.now()}`, file);
-                               if(data) { const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path); setCarwashForm(prev => ({...prev, after: publicUrl})); }
-                               setUploadingAfter(false);
-                            }} />
+                            <input type="file" className="hidden" onChange={(e) => handleUploadCarwashImage(e, 'after')} disabled={uploadingAfter} />
                           </label>
                         </div>
                         <input value={carwashForm.after} onChange={e => setCarwashForm({...carwashForm, after: e.target.value})} placeholder="URL 2" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
@@ -942,8 +1076,13 @@ export default function AdminDashboard() {
                     <textarea value={promoForm.desc} onChange={e => setPromoForm({...promoForm, desc: e.target.value})} placeholder="Intelligence..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-3xl font-bold outline-none min-h-[100px] resize-none text-xs" />
                     <div className="grid grid-cols-2 gap-4">
                       <input value={promoForm.img} onChange={e => setPromoForm({...promoForm, img: e.target.value})} placeholder="Asset URL" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                      <input value={promoForm.deadline} onChange={e => setPromoForm({...promoForm, deadline: e.target.value})} placeholder="Deadline" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <label className="h-14 bg-white/60 backdrop-blur-md rounded-full border border-white flex items-center justify-center cursor-pointer text-brand-blue shadow-lg hover:bg-white transition-all gap-2 px-4">
+                        <Camera size={18} />
+                        <span className="text-[8px] font-black uppercase">Upload</span>
+                        <input type="file" className="hidden" onChange={handleUploadPromoImage} disabled={uploadingPromo} />
+                      </label>
                     </div>
+                    <input value={promoForm.deadline} onChange={e => setPromoForm({...promoForm, deadline: e.target.value})} placeholder="Deadline" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     <button type="submit" disabled={uploadingPromo} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Campaign</button>
                   </form>
                 </div>
@@ -983,11 +1122,7 @@ export default function AdminDashboard() {
                       <input value={teamForm.image} onChange={e => setTeamForm({...teamForm, image: e.target.value})} placeholder="Visual ID URL" className="flex-grow px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <label className="h-14 w-14 bg-white/60 backdrop-blur-md rounded-2xl border border-white flex items-center justify-center cursor-pointer text-brand-blue shadow-lg hover:bg-white transition-all">
                         <Camera size={20} />
-                        <input type="file" className="hidden" onChange={async (e) => {
-                           const file = e.target.files?.[0]; if(!file) return;
-                           const { data } = await supabase.storage.from('avatars').upload(`team/${Date.now()}`, file);
-                           if(data) { const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path); setTeamForm(prev => ({...prev, image: publicUrl})); }
-                        }} />
+                        <input type="file" className="hidden" onChange={handleUploadTeamMemberImage} disabled={uploadingMember} />
                       </label>
                     </div>
                     <button type="submit" disabled={uploadingMember} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Personnel</button>
@@ -1111,7 +1246,7 @@ export default function AdminDashboard() {
                           </div>
                           <div className="min-w-0">
                             <p className="font-black text-sm uppercase tracking-tight font-heading truncate">{acc.full_name || 'Anonymous User'}</p>
-                            <p className="text-[9px] font-bold text-black/40 truncate mt-1">{acc.email}</p>
+                            <p className="text-[9px] font-bold text-black/40 truncate mt-1">{acc.email || 'Email not synchronized'}</p>
                           </div>
                         </div>
                         

@@ -100,9 +100,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           const { error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
+            email: email,
             phone: phone,
             address: location,
             avatar_url: avatarUrl,
+            role: 'user',
             updated_at: new Date().toISOString(),
           });
           if (profileError) console.error('Profile creation error:', profileError);
