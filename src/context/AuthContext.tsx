@@ -124,10 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await fetchProfile(user.id);
   };
 
-  const isAdmin = profile?.role === 'admin' || user?.email === ADMIN_EMAIL;
+  const isAdmin = Boolean(profile?.role === 'admin' || (user?.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()));
 
   const hasRole = (role: string) => {
-    if (user?.email === ADMIN_EMAIL && role === 'admin') return true;
+    if (user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && role === 'admin') return true;
     return profile?.role === role;
   };
 
