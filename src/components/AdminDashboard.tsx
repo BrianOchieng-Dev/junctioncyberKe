@@ -19,7 +19,8 @@ import {
   Megaphone,
   Droplets,
   Workflow,
-  ChevronLeft
+  ChevronLeft,
+  ImageOff
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
@@ -417,7 +418,7 @@ export default function AdminDashboard() {
     setUploadingGallery(true);
     const { error } = await supabase.from('gallery').insert([{ category: selectedCategory, image_url: galleryImageUrl }]);
     if (!error) {
-      toast.success('Asset Synchronized!');
+      toast.success('Gallery item added!');
       setGalleryImageUrl('');
       fetchGalleryItems();
     } else {
@@ -485,7 +486,7 @@ export default function AdminDashboard() {
         .getPublicUrl(fileName);
 
       setTeamForm(prev => ({ ...prev, image: publicUrl }));
-      toast.success('Personnel visual asset synchronized!');
+      toast.success('Team member image saved!');
     } catch (error: any) {
       console.error('Upload Error:', error);
       toast.error(`Upload failed: ${error.message || 'Check if "avatars" bucket exists'}`);
@@ -514,7 +515,7 @@ export default function AdminDashboard() {
         .getPublicUrl(fileName);
 
       setPromoForm(prev => ({ ...prev, img: publicUrl }));
-      toast.success('Promo asset synchronized!');
+      toast.success('Promotion image saved!');
     } catch (error: any) {
       console.error('Upload Error:', error);
       toast.error(`Upload failed: ${error.message || 'Check if "showcase" bucket exists'}`);
@@ -535,7 +536,7 @@ export default function AdminDashboard() {
     setUploadingMember(true);
     const { error } = await supabase.from('team_members').insert([teamForm]);
     if (!error) {
-      toast.success('Personnel Deployed!');
+      toast.success('Team member added!');
       setTeamForm({ name: '', role: '', image: '' });
       fetchTeamMembers();
     } else {
@@ -555,15 +556,15 @@ export default function AdminDashboard() {
 
   const fetchAccounts = async () => {
     try {
-      // Try created_at first, then updated_at as a secondary reliable sort
-      let { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      // Prioritize updated_at to avoid 400 errors if created_at is missing
+      let { data, error } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
       
       if (error) {
-        console.warn('created_at missing, trying updated_at:', error.message);
-        const { data: altData, error: altError } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
+        console.warn('updated_at missing, trying created_at:', error.message);
+        const { data: altData, error: altError } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
         
         if (altError) {
-          console.warn('updated_at also missing, falling back to unordered:', altError.message);
+          console.warn('created_at also missing, falling back to unordered:', altError.message);
           const { data: fallbackData, error: fallbackError } = await supabase.from('profiles').select('*');
           if (fallbackError) throw fallbackError;
           data = fallbackData;
@@ -579,16 +580,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUpdateRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-    if (!error) {
-      toast.success(`Role updated to ${newRole}`);
-      fetchAccounts();
-    } else {
-      toast.error('Failed to update role');
-    }
-  };
+
 
 
 
@@ -616,7 +608,7 @@ export default function AdminDashboard() {
         .getPublicUrl(filePath);
 
       setEventForm({ ...eventForm, image: publicUrl });
-      toast.success('Poster uploaded! Now click Deploy.');
+      toast.success('Poster uploaded! Now click Publish.');
     } catch (error: any) {
       console.error('Upload Error:', error);
       toast.error(`Upload failed: ${error.message || 'Check if "events" bucket exists and is public'}`);
@@ -634,7 +626,7 @@ export default function AdminDashboard() {
     setUploadingEvent(true);
     const { error } = await supabase.from('business_events').insert([eventForm]);
     if (!error) {
-      toast.success('Poster Deployed!');
+      toast.success('Event published!');
       setEventForm({ title: '', date: '', image: '', desc: '' });
       fetchEvents();
     } else {
@@ -1122,7 +1114,11 @@ export default function AdminDashboard() {
                         whileHover={{ scale: 1.02 }}
                         className="p-4 bg-white/40 border border-white rounded-3xl flex gap-6 group transition-all shadow-sm"
                       >
-                        <img src={p.img} className="h-24 w-24 rounded-2xl object-cover shadow-lg" alt="Promo" />
+                        {p.img ? (
+                          <img src={p.img} className="h-24 w-24 rounded-2xl object-cover shadow-lg" alt="Promo" />
+                        ) : (
+                          <div className="h-24 w-24 rounded-2xl bg-black/5 flex items-center justify-center text-black/20"><ImageOff size={24} /></div>
+                        )}
                         <div className="flex-grow space-y-1 justify-center flex flex-col">
                           <p className="font-black text-xs uppercase tracking-tight font-heading">{p.title}</p>
                           <p className="text-[8px] font-black text-brand-blue uppercase">{p.offer}</p>
@@ -1164,7 +1160,11 @@ export default function AdminDashboard() {
                         whileHover={{ scale: 1.02, x: 4 }}
                         className="p-4 bg-white/40 border border-white rounded-3xl flex items-center gap-4 group shadow-sm hover:bg-white/60 transition-all cursor-pointer"
                       >
-                        <img src={m.image} className="h-16 w-16 rounded-2xl object-cover shadow-lg" alt="Team" />
+                        {m.image ? (
+                          <img src={m.image} className="h-16 w-16 rounded-2xl object-cover shadow-lg" alt="Team" />
+                        ) : (
+                          <div className="h-16 w-16 rounded-2xl bg-black/5 flex items-center justify-center text-black/20"><User size={20} /></div>
+                        )}
                         <div className="flex-grow">
                           <p className="font-black text-xs uppercase tracking-tight font-heading">{m.name}</p>
                           <p className="text-[8px] font-black text-brand-blue uppercase">{m.role}</p>
@@ -1229,8 +1229,12 @@ export default function AdminDashboard() {
                         whileHover={{ scale: 1.02 }}
                         className="p-5 bg-white/40 border border-white rounded-[32px] flex gap-6 group transition-all shadow-md"
                       >
-                        <div className="h-32 w-24 shrink-0 rounded-2xl overflow-hidden shadow-xl border border-white/40">
-                          <img src={ev.image} className="h-full w-full object-cover" alt="Event" />
+                        <div className="h-32 w-24 shrink-0 rounded-2xl overflow-hidden shadow-xl border border-white/40 bg-black/5 flex items-center justify-center">
+                          {ev.image ? (
+                            <img src={ev.image} className="h-full w-full object-cover" alt="Event" />
+                          ) : (
+                            <ImageOff size={24} className="text-black/20" />
+                          )}
                         </div>
                         <div className="flex-grow flex flex-col justify-center">
                           <div className="flex justify-between items-start">
@@ -1283,17 +1287,14 @@ export default function AdminDashboard() {
                             <span className="text-[8px] font-black uppercase tracking-widest text-black/40">{isOnline ? 'Online' : 'Offline'}</span>
                           </div>
                           
-                          <button 
-                            onClick={() => handleUpdateRole(acc.id, acc.role)}
-                            className={cn(
-                              "px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all",
-                              acc.role === 'admin' 
-                                ? "bg-brand-blue text-white border-brand-blue shadow-lg shadow-brand-blue/20" 
-                                : "bg-white/60 text-black/40 hover:bg-black/5"
-                            )}
-                          >
-                            {acc.role === 'admin' ? 'Admin Access' : 'User Access'}
-                          </button>
+                          <div className={cn(
+                            "px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all",
+                            acc.role === 'admin' 
+                              ? "bg-brand-blue/10 text-brand-blue border-brand-blue/20" 
+                              : "bg-black/5 text-black/40 border-black/5"
+                          )}>
+                            {acc.role === 'admin' ? 'Administrator' : 'Member'}
+                          </div>
                         </div>
                       </motion.div>
                     );

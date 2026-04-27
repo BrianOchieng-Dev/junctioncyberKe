@@ -39,10 +39,10 @@ export default function AuthGate({ children, requireAdmin = false, allowedRoles 
       <div className="min-h-screen flex items-center justify-center bg-[#FBFBFD] p-6 text-center text-[#1D1D1F]">
         <div className="glass-card p-12 max-w-md bg-white border border-black/5 shadow-2xl rounded-[40px]">
           <Settings size={48} className="mx-auto text-red-500 mb-6" />
-          <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">Access Restricted</h2>
-          <p className="text-black/40 font-medium mb-8">This mainframe sector requires elevated permissions.</p>
+          <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">Admin Access Required</h2>
+          <p className="text-black/40 font-medium mb-8">This section is for administrators only.</p>
           <Link to="/" className="inline-block px-8 py-3 bg-brand-blue text-white rounded-full font-bold shadow-lg shadow-brand-blue/20 transition-transform active:scale-95">
-            Return to Base Station
+            Go to Home
           </Link>
         </div>
       </div>
