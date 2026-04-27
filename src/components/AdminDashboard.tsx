@@ -555,15 +555,21 @@ export default function AdminDashboard() {
 
   const fetchAccounts = async () => {
     try {
-      // First try to fetch with created_at ordering
+      // Try created_at first, then updated_at as a secondary reliable sort
       let { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       
-      // If that fails (e.g. column doesn't exist), try without ordering
       if (error) {
-        console.warn('Falling back to unordered fetch:', error);
-        const { data: fallbackData, error: fallbackError } = await supabase.from('profiles').select('*');
-        if (fallbackError) throw fallbackError;
-        data = fallbackData;
+        console.warn('created_at missing, trying updated_at:', error.message);
+        const { data: altData, error: altError } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
+        
+        if (altError) {
+          console.warn('updated_at also missing, falling back to unordered:', altError.message);
+          const { data: fallbackData, error: fallbackError } = await supabase.from('profiles').select('*');
+          if (fallbackError) throw fallbackError;
+          data = fallbackData;
+        } else {
+          data = altData;
+        }
       }
       
       if (data) setAccounts(data);
