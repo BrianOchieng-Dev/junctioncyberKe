@@ -951,28 +951,28 @@ export default function AdminDashboard() {
             {activeTab === 'showcase' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-8 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Deploy <span className="text-brand-blue not-italic">Asset</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Add <span className="text-brand-blue not-italic">Gallery Image</span></h3>
                   <form onSubmit={handleAddGalleryItem} className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-black/30 ml-4">Domain</label>
+                      <label className="text-[8px] font-black uppercase tracking-widest text-black/30 ml-4">Category</label>
                       <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none appearance-none cursor-pointer text-xs">
                         {GALLERY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Deployment Coordinates</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Image Details</label>
                       <div className="flex gap-4">
-                        <input value={galleryImageUrl} onChange={e => setGalleryImageUrl(e.target.value)} placeholder="Secure Image URL..." className="flex-grow px-8 py-5 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                        <input value={galleryImageUrl} onChange={e => setGalleryImageUrl(e.target.value)} placeholder="Image Link (URL)..." className="flex-grow px-8 py-5 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                         <label className="px-8 py-5 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-black text-[8px] uppercase tracking-[0.3em] cursor-pointer hover:bg-brand-blue hover:text-white transition-all font-heading shadow-lg">
                           Upload <input type="file" className="hidden" onChange={handleUploadGalleryImage} disabled={uploadingGallery} />
                         </label>
                       </div>
                     </div>
-                    <button type="submit" disabled={uploadingGallery || !galleryImageUrl} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Asset</button>
+                    <button type="submit" disabled={uploadingGallery || !galleryImageUrl} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Add to Gallery</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
-                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Asset Terminal</h4>
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Manage Gallery</h4>
                   <div className="grid grid-cols-1 gap-4">
                     {galleryItems.map(item => (
                       <motion.div 
@@ -995,8 +995,8 @@ export default function AdminDashboard() {
 
             {activeTab === 'carwash' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
-                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Magic <span className="text-brand-blue not-italic">Sync</span></h3>
+                <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Add <span className="text-brand-blue not-italic">Showcase</span></h3>
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     if(!carwashForm.model || !carwashForm.before || !carwashForm.after) return toast.error("Fill all fields");
@@ -1006,37 +1006,37 @@ export default function AdminDashboard() {
                       before_url: carwashForm.before,
                       after_url: carwashForm.after
                     }]);
-                    if(!error) { toast.success("Deployed!"); setCarwashForm({model:'', before:'', after:''}); fetchCarwashItems(); }
+                    if(!error) { toast.success("Added to Showcase!"); setCarwashForm({model:'', before:'', after:''}); fetchCarwashItems(); }
                     setUploadingCarwash(false);
                   }} className="space-y-4">
-                    <input value={carwashForm.model} onChange={e => setCarwashForm({...carwashForm, model: e.target.value})} placeholder="Car Model ID" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <input value={carwashForm.model} onChange={e => setCarwashForm({...carwashForm, model: e.target.value})} placeholder="Car Model (e.g. Toyota Vitz)" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="aspect-video bg-black/5 rounded-2xl overflow-hidden border border-white relative group shadow-inner">
                           {carwashForm.before && <img src={carwashForm.before} className="w-full h-full object-cover" alt="Before" />}
                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all">
-                            <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Source</span>
+                            <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Upload Before</span>
                             <input type="file" className="hidden" onChange={(e) => handleUploadCarwashImage(e, 'before')} disabled={uploadingBefore} />
                           </label>
                         </div>
-                        <input value={carwashForm.before} onChange={e => setCarwashForm({...carwashForm, before: e.target.value})} placeholder="URL 1" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
+                        <input value={carwashForm.before} onChange={e => setCarwashForm({...carwashForm, before: e.target.value})} placeholder="Before Image URL" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
                       </div>
                       <div className="space-y-2">
                         <div className="aspect-video bg-black/5 rounded-2xl overflow-hidden border border-white relative group shadow-inner">
                           {carwashForm.after && <img src={carwashForm.after} className="w-full h-full object-cover" alt="After" />}
                           <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all">
-                            <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Target</span>
+                            <span className="bg-white text-black px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest">Upload After</span>
                             <input type="file" className="hidden" onChange={(e) => handleUploadCarwashImage(e, 'after')} disabled={uploadingAfter} />
                           </label>
                         </div>
-                        <input value={carwashForm.after} onChange={e => setCarwashForm({...carwashForm, after: e.target.value})} placeholder="URL 2" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
+                        <input value={carwashForm.after} onChange={e => setCarwashForm({...carwashForm, after: e.target.value})} placeholder="After Image URL" className="w-full px-4 py-2 bg-white/20 border border-white rounded-xl text-[8px] font-bold outline-none" />
                       </div>
                     </div>
-                    <button type="submit" disabled={uploadingCarwash} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl disabled:opacity-50 font-heading">Deploy Transformation</button>
+                    <button type="submit" disabled={uploadingCarwash} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl disabled:opacity-50 font-heading">Add to Showcase</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
-                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Magic Terminal</h4>
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Showcase List</h4>
                   <div className="grid grid-cols-1 gap-6">
                     {carwashItems.map(item => (
                       <motion.div 
@@ -1067,27 +1067,27 @@ export default function AdminDashboard() {
             {activeTab === 'promotions' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Launch <span className="text-brand-blue not-italic">Promo</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Add <span className="text-brand-blue not-italic">Promotion</span></h3>
                   <form onSubmit={handleAddPromotion} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <input value={promoForm.title} onChange={e => setPromoForm({...promoForm, title: e.target.value})} placeholder="Title" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                      <input value={promoForm.offer} onChange={e => setPromoForm({...promoForm, offer: e.target.value})} placeholder="Offer" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-brand-blue text-xs" />
+                      <input value={promoForm.title} onChange={e => setPromoForm({...promoForm, title: e.target.value})} placeholder="Promotion Name" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <input value={promoForm.offer} onChange={e => setPromoForm({...promoForm, offer: e.target.value})} placeholder="Offer (e.g. 50% Off)" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-brand-blue text-xs" />
                     </div>
-                    <textarea value={promoForm.desc} onChange={e => setPromoForm({...promoForm, desc: e.target.value})} placeholder="Intelligence..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-3xl font-bold outline-none min-h-[100px] resize-none text-xs" />
+                    <textarea value={promoForm.desc} onChange={e => setPromoForm({...promoForm, desc: e.target.value})} placeholder="Description..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-3xl font-bold outline-none min-h-[100px] resize-none text-xs" />
                     <div className="grid grid-cols-2 gap-4">
                       <input value={promoForm.img} onChange={e => setPromoForm({...promoForm, img: e.target.value})} placeholder="Asset URL" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <label className="h-14 bg-white/60 backdrop-blur-md rounded-full border border-white flex items-center justify-center cursor-pointer text-brand-blue shadow-lg hover:bg-white transition-all gap-2 px-4">
                         <Camera size={18} />
-                        <span className="text-[8px] font-black uppercase">Upload</span>
+                        <span className="text-[8px] font-black uppercase">Upload Image</span>
                         <input type="file" className="hidden" onChange={handleUploadPromoImage} disabled={uploadingPromo} />
                       </label>
                     </div>
-                    <input value={promoForm.deadline} onChange={e => setPromoForm({...promoForm, deadline: e.target.value})} placeholder="Deadline" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                    <button type="submit" disabled={uploadingPromo} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Synchronize Campaign</button>
+                    <input value={promoForm.deadline} onChange={e => setPromoForm({...promoForm, deadline: e.target.value})} placeholder="Expiry Date / Deadline" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <button type="submit" disabled={uploadingPromo} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Publish Promotion</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
-                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Campaign Hub</h4>
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Current Promotions</h4>
                   <div className="space-y-4">
                     {promotions.map(p => (
                       <motion.div 
@@ -1114,22 +1114,22 @@ export default function AdminDashboard() {
             {activeTab === 'team' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Team <span className="text-brand-blue not-italic">Sync</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Add <span className="text-brand-blue not-italic">Member</span></h3>
                   <form onSubmit={handleAddTeamMember} className="space-y-4">
-                    <input value={teamForm.name} onChange={e => setTeamForm({...teamForm, name: e.target.value})} placeholder="Identity" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
-                    <input value={teamForm.role} onChange={e => setTeamForm({...teamForm, role: e.target.value})} placeholder="Operational Role" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <input value={teamForm.name} onChange={e => setTeamForm({...teamForm, name: e.target.value})} placeholder="Full Name" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                    <input value={teamForm.role} onChange={e => setTeamForm({...teamForm, role: e.target.value})} placeholder="Job Title / Role" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     <div className="flex gap-4">
-                      <input value={teamForm.image} onChange={e => setTeamForm({...teamForm, image: e.target.value})} placeholder="Visual ID URL" className="flex-grow px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <input value={teamForm.image} onChange={e => setTeamForm({...teamForm, image: e.target.value})} placeholder="Profile Image URL" className="flex-grow px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <label className="h-14 w-14 bg-white/60 backdrop-blur-md rounded-2xl border border-white flex items-center justify-center cursor-pointer text-brand-blue shadow-lg hover:bg-white transition-all">
                         <Camera size={20} />
                         <input type="file" className="hidden" onChange={handleUploadTeamMemberImage} disabled={uploadingMember} />
                       </label>
                     </div>
-                    <button type="submit" disabled={uploadingMember} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Deploy Personnel</button>
+                    <button type="submit" disabled={uploadingMember} className="w-full mt-4 py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">Add to Team</button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
-                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Personnel Roster</h4>
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Current Team</h4>
                   <div className="grid grid-cols-1 gap-4">
                     {team.map(m => (
                       <motion.div 
@@ -1155,16 +1155,16 @@ export default function AdminDashboard() {
             {activeTab === 'events' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 space-y-6 shadow-xl border-white/30 overflow-y-auto no-scrollbar">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Poster <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Events <span className="text-brand-blue not-italic">Manager</span></h3>
                   <form onSubmit={handleAddEvent} className="space-y-6">
                     <div className="space-y-4">
-                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Identity & Schedule</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Name & Date</label>
                       <input value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} placeholder="Event Name / Title" className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <input type="date" value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} className="w-full px-6 py-4 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                     </div>
-
+ 
                     <div className="space-y-4">
-                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Visual Identity (Poster)</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Poster</label>
                       <div className="aspect-[4/5] bg-black/5 rounded-[32px] overflow-hidden border border-white relative group shadow-inner">
                         {eventForm.image ? (
                           <img src={eventForm.image} className="w-full h-full object-cover" alt="Preview" />
@@ -1176,25 +1176,25 @@ export default function AdminDashboard() {
                         )}
                         <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 bg-black/40 transition-all backdrop-blur-sm">
                           <span className="bg-white text-black px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl">
-                            {uploadingEvent ? 'Uploading...' : 'Browse Computer'}
+                            {uploadingEvent ? 'Uploading...' : 'Choose Image'}
                           </span>
                           <input type="file" className="hidden" accept="image/*" onChange={handleUploadEventImage} disabled={uploadingEvent} />
                         </label>
                       </div>
                     </div>
-
+ 
                     <div className="space-y-4">
-                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Event Intelligence</label>
+                      <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Description</label>
                       <textarea value={eventForm.desc} onChange={e => setEventForm({...eventForm, desc: e.target.value})} placeholder="Detailed description of the event..." className="w-full px-6 py-4 bg-white/40 border border-white rounded-[32px] font-bold outline-none min-h-[120px] resize-none text-xs" />
                     </div>
-
+ 
                     <button type="submit" disabled={uploadingEvent} className="w-full py-5 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-xl shadow-brand-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 font-heading">
-                      Deploy Event Poster
+                      Publish Event
                     </button>
                   </form>
                 </div>
                 <div className="glass-card bg-white/20 backdrop-blur-xl p-8 overflow-y-auto no-scrollbar shadow-xl border-white/30">
-                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Active Posters</h4>
+                  <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-black/30 mb-6 px-2">Current Events</h4>
                   <div className="grid grid-cols-1 gap-6">
                     {events.map(ev => (
                       <motion.div 
@@ -1225,7 +1225,7 @@ export default function AdminDashboard() {
             {activeTab === 'accounts' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Accounts <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">User <span className="text-brand-blue not-italic">Accounts</span></h3>
                   <div className="flex items-center gap-2 px-4 py-2 bg-brand-blue/5 border border-brand-blue/10 rounded-full">
                     <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse" />
                     <span className="text-[8px] font-black text-brand-blue uppercase tracking-widest">{accounts.length} Total Accounts</span>
@@ -1284,22 +1284,22 @@ export default function AdminDashboard() {
             {activeTab === 'settings' && (
               <motion.div initial={{opacity:0, scale:0.98}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.02}} className="glass-card bg-white/20 backdrop-blur-xl p-12 md:p-16 max-w-4xl mx-auto space-y-12 shadow-2xl border-white/30 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                <h3 className="text-2xl font-black font-heading italic uppercase">Core <span className="text-brand-blue not-italic">Sync</span></h3>
+                <h3 className="text-2xl font-black font-heading italic uppercase">App <span className="text-brand-blue not-italic">Settings</span></h3>
                 <div className="space-y-8 relative z-10">
                   <div className="space-y-4">
-                    <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Hero Interface Asset</label>
+                    <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Hero Background Image</label>
                     <div className="flex gap-4">
-                      <input value={heroBg} onChange={e => setHeroBg(e.target.value)} placeholder="Secure Image URL..." className="flex-grow px-8 py-5 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
+                      <input value={heroBg} onChange={e => setHeroBg(e.target.value)} placeholder="Image URL..." className="flex-grow px-8 py-5 bg-white/40 border border-white rounded-full font-bold outline-none text-xs" />
                       <label className="px-8 py-5 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-black text-[8px] uppercase tracking-[0.3em] cursor-pointer hover:bg-brand-blue hover:text-white transition-all font-heading shadow-lg">
                         Upload <input type="file" className="hidden" onChange={handleUploadBg} />
                       </label>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Brand Narrative (Slogan)</label>
+                    <label className="text-[8px] font-black uppercase tracking-[0.4em] text-black/30 ml-4">Site Description (Slogan)</label>
                     <textarea value={aboutSlogan} onChange={e => setAboutSlogan(e.target.value)} className="w-full px-8 py-6 bg-white/40 border border-white rounded-[40px] font-bold outline-none min-h-[120px] resize-none text-sm" />
                   </div>
-                  <button onClick={saveSettings} disabled={saveLoading} className="w-full py-6 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.4em] shadow-2xl disabled:opacity-50 font-heading">Synchronize Environment Settings</button>
+                  <button onClick={saveSettings} disabled={saveLoading} className="w-full py-6 rounded-full bg-brand-blue text-white font-black text-[9px] uppercase tracking-[0.4em] shadow-2xl disabled:opacity-50 font-heading">Save All Settings</button>
                 </div>
               </motion.div>
             )}
@@ -1307,7 +1307,7 @@ export default function AdminDashboard() {
             {activeTab === 'scheduler' && (
               <motion.div initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:1.05}} className="glass-card bg-white/20 backdrop-blur-xl p-8 h-full flex flex-col shadow-xl border-white/30 overflow-hidden">
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black font-heading italic uppercase">Booking <span className="text-brand-blue not-italic">Terminal</span></h3>
+                  <h3 className="text-2xl font-black font-heading italic uppercase">Customer <span className="text-brand-blue not-italic">Bookings</span></h3>
                   <div className="flex items-center gap-2 px-4 py-2 bg-brand-blue/5 border border-brand-blue/10 rounded-full">
                     <span className="h-1.5 w-1.5 rounded-full bg-brand-blue animate-pulse" />
                     <span className="text-[8px] font-black text-brand-blue uppercase tracking-widest">Active Sync</span>
